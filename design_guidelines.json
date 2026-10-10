@@ -1,0 +1,169 @@
+{
+  "project_name": "Indo Crypto Lens",
+  "app_archetype": "The Performance Pro / High-Density Crypto Terminal (Swiss precision meets Bloomberg/TradingView terminal style)",
+  "language_and_locale": {
+    "primary_language": "id-ID",
+    "financial_terms": "Standard international crypto/trading abbreviations preserved (RSI, MACD, SMA, Support/Resistance, Volume Delta, Bullish, Bearish, Volatility, ATR)",
+    "timezone": "WITA (UTC+8)",
+    "currency_format": "IDR (e.g., Rp 1.450.000.000 atau Rp 45.250)",
+    "date_format": "DD/MM/YYYY HH:mm WITA",
+    "snapshot_window": "06:00 WITA - 05:59 WITA"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Outfit Variable",
+      "body": "Plus Jakarta Sans Variable",
+      "mono": "JetBrains Mono Variable"
+    },
+    "font_imports": [
+      "@import \"@fontsource-variable/outfit\";",
+      "@import \"@fontsource-variable/plus-jakarta-sans\";",
+      "@import \"@fontsource-variable/jetbrains-mono\";"
+    ],
+    "scale_px": {
+      "display": 48,
+      "h1": 36,
+      "h2": 28,
+      "h3": 20,
+      "h4": 16,
+      "body": 15,
+      "caption": 13,
+      "micro": 11
+    },
+    "rules": {
+      "headings": "font-heading font-bold tracking-tight text-foreground",
+      "body": "font-sans font-normal leading-relaxed text-foreground",
+      "financial_figures": "font-mono font-medium tracking-tight tabular-nums",
+      "labels_and_badges": "font-sans font-semibold text-xs tracking-wider uppercase"
+    }
+  },
+  "colors": {
+    "palette_strategy": "Deep Obsidian terminal base with Emerald Green (+), Crimson Red (-), Electric Cyan (Technical indicator triggers), and Warm Amber (Fundamental news/sentiment triggers). High APCA contrast compliant.",
+    "accent": "#00F2FE",
+    "on_accent": "#050B14",
+    "surfaces": [
+      {
+        "name": "page_dark",
+        "kind": "solid",
+        "bg": "#0B0E14",
+        "on_bg": "#F1F5F9",
+        "on_bg_muted": "#94A3B8",
+        "roles": {
+          "link": "#38BDF8",
+          "error": "#F43F5E",
+          "success": "#10B981",
+          "warning": "#F59E0B",
+          "bullish": "#10B981",
+          "bearish": "#F43F5E",
+          "neutral": "#94A3B8",
+          "technical_badge": "#38BDF8",
+          "fundamental_badge": "#FBBF24"
+        }
+      },
+      {
+        "name": "panel_dark",
+        "kind": "solid",
+        "bg": "#121824",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8",
+        "roles": {
+          "border": "#1E293B",
+          "subtle_border": "#334155",
+          "highlight": "#00F2FE",
+          "stat_positive": "#34D399",
+          "stat_negative": "#FB7185"
+        }
+      },
+      {
+        "name": "card_subsurface_dark",
+        "kind": "solid",
+        "bg": "#192231",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#94A3B8"
+      },
+      {
+        "name": "page_light",
+        "kind": "solid",
+        "bg": "#F8FAFC",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#475569",
+        "roles": {
+          "link": "#0284C7",
+          "error": "#E11D48",
+          "success": "#059669",
+          "warning": "#D97706",
+          "bullish": "#059669",
+          "bearish": "#E11D48",
+          "neutral": "#475569"
+        }
+      },
+      {
+        "name": "panel_light",
+        "kind": "solid",
+        "bg": "#FFFFFF",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#475569",
+        "roles": {
+          "border": "#E2E8F0",
+          "subtle_border": "#CBD5E1",
+          "highlight": "#0284C7"
+        }
+      },
+      {
+        "name": "hero_auth_panel",
+        "kind": "solid",
+        "bg": "#090D16",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8"
+      },
+      {
+        "name": "terminal_header_glass",
+        "kind": "glass",
+        "contrast_against": "#0B0E14",
+        "guarantee": "backdrop-blur-xl bg-[#0B0E14]/85 border-b border-[#1E293B]",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8"
+      }
+    ]
+  },
+  "entry_surfaces": {
+    "/login": "split branded terminal auth — high-impact live metrics & hybrid methodology panel left, secure admin credential form with animated status ping right",
+    "/": "high-density analytics terminal dashboard — global Indodax status banner + 06:00 WITA countdown header, tabbed Daily/Weekly Top 10 Bullish snapshot table, hybrid score breakdown preview and quick-access watchlist"
+  },
+  "grids_and_layouts": {
+    "dashboard_grid": "High-density multi-pane terminal layout (MODE B): top stats ticker strip, main 12-column grid with snapshot table (8 cols) and live market heartbeat/countdown (4 cols)",
+    "coin_detail_layout": "Asymmetric multi-pane: 8-col TradingView candlestick interactive chart + technical indicator matrix (RSI, MACD, SMA 20/50/200, Support/Resistance), 4-col fundamental news sentiment stream + RSS score breakdown + hybrid weight simulator",
+    "evaluation_layout": "Performance tracking suite: timeline selector (Harian/Mingguan/Bulanan), Recharts historical projection vs Actual High accuracy curve, chronological deviation ledger table with CSV/PDF export",
+    "admin_layout": "Two-tab operations cockpit: User Account Provisioning (create user with generated initial password, copy-to-clipboard, revoke/delete) and Hybrid Analysis Weight Configuration (interactive sliders for 70/30 daily, 50/50 weekly, or custom override with auto-save)"
+  },
+  "motion_and_interactions": {
+    "principles": [
+      "Micro-interactions only on terminal tables and metrics (glow border on hover, quick 150ms state shifts)",
+      "Strictly respect prefers-reduced-motion",
+      "Countdown timer pulse at T-10 minutes to 06:00 WITA snapshot generation",
+      "Tab transitions with lightweight fade-in (opacity 0.2s ease)"
+    ]
+  },
+  "accessibility_rules": {
+    "wcag_level": "WCAG AA (minimum 4.5:1 for all text & metrics against dark backgrounds)",
+    "data_testids": "All interactive buttons, inputs, tabs, export actions, and table rows must contain role-based kebab-case `data-testid` attributes (e.g. `data-testid=\"login-submit-button\"`, `data-testid=\"coin-row-btc-idr\"`, `data-testid=\"export-csv-button\"`, `data-testid=\"sync-api-button\"`)"
+  },
+  "image_urls": {
+    "auth_background_illustration": "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwxfHxjcnlwdG8lMjBmaW5hbmNpYWwlMjB0cmFkaW5nJTIwc2NyZWVufGVufDB8fHx8MTc5MTYyODg3MHww&ixlib=rb-4.1.0&q=85",
+    "terminal_desk_context": "https://images.unsplash.com/photo-1621264448270-9ef00e88a935?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHw0fHxjcnlwdG8lMjBmaW5hbmNpYWwlMjB0cmFkaW5nJTIwc2NyZWVufGVufDB8fHx8MTc5MTYyODg3MHww&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "1. Application Name & Branding: 'Indo Crypto Lens' (Lensa Kripto Indonesia). Subtitle: 'Platform Analisis Hybrid Kripto Indodax IDR'.",
+    "2. Language and Tone: Indonesian-first copy with standard financial/crypto acronyms (RSI, MACD, SMA, Support/Resistance, IDR, Actual High, Proyeksi). Use clean, authoritative fintech phrasing (e.g. 'Snapshot Terkunci', 'Estimasi Kenaikan', 'Skor Sentimen', 'Akurasi Model', 'Hitung Mundur Sinkronisasi').",
+    "3. Timezone Logic: All dates and snapshot regenerations must be anchored to WITA (UTC+8 / Waktu Indonesia Tengah). Daily snapshot is regenerated at exactly 06:00 WITA and remains locked valid until 05:59 WITA. Weekly snapshot is regenerated every Monday at 06:00 WITA. Display a live real-time countdown timer to the next 06:00 WITA snapshot generation.",
+    "4. Indodax Real-time Market Data Integration: Connect with Indodax Public API endpoints (`https://indodax.com/api/tickers`, `https://indodax.com/api/summaries` or backend mock/cached fetch with fail-safe fallback) for all IDR pairs (BTC/IDR, ETH/IDR, SOL/IDR, DOGE/IDR, XRP/IDR, ADA/IDR, BNB/IDR, etc.). Display live price in IDR (Rp), 24h high/low, and 24h volume.",
+    "5. Hybrid Analysis Engine: Combine Technical Analysis (RSI 14, MACD crossover, SMA 20/50/200 trend, Support-Resistance distance) and Fundamental Analysis (RSS news from CoinDesk, Cointelegraph, Decrypt with NLP sentiment polarity scoring -1.0 to +1.0). Default weights: Daily = 70% TA + 30% FA; Weekly = 50% TA + 50% FA. Provide an Admin setting to dynamically re-weight TA/FA.",
+    "6. Snapshot Tables (Top 10 Koin Bullish): Sort descending by 'Estimasi Kenaikan %'. Show Rank (#1-10), Pair (e.g. BTC/IDR), Harga Terkini (Rp), Skor Hybrid (0-100), Skor TA (70%), Skor FA (30%), Estimasi Kenaikan (+X.X%), Level Target (Rp), dan Status Validitas Snapshot.",
+    "7. Coin Detail Modal / Page: Embed TradingView Interactive Chart widget (for the coin's symbol, e.g. BINANCE:BTCUSDT or INDODAX:BTCIDR with fallback). Provide a Technical Indicator Matrix with gauges/bars (RSI, MACD status, Moving Average consensus), and a Fundamental News Stream showing real RSS headlines, source tags, publication time, and sentiment badges (+Bullish, ~Netral, -Bearish).",
+    "8. Evaluation & Accuracy Tracker (Evaluasi Kinerja): Historical performance tracking comparing 'Proyeksi Estimasi' vs 'Actual High tercapai dalam 24 jam/7 hari'. Provide Accuracy Rate % (e.g., 84.2% Sukses Target), Rata-rata Deviasi %, dan Recharts Line/Bar Chart untuk tren akurasi harian, mingguan, dan bulanan.",
+    "9. Admin Features: (a) User Management: Admin can generate accounts for team members with an auto-generated secure password (with Copy to Clipboard feature) and Delete/Revoke user. (b) Analysis Weights Config: Slider controls to adjust Daily & Weekly TA/FA percentage split.",
+    "10. Export Features: Provide CSV Export for Top 10 Bullish Snapshots and Evaluation logs, plus a clean Print-to-PDF layout (`window.print()` with `@media print` clean formatting).",
+    "11. Authentication & Security: Session-based auth with httpOnly cookies via FastAPI (`/api/auth/login`, `/api/auth/me`, `/api/auth/logout`) with admin role checking. Protected dashboard routes that smoothly redirect unauthenticated users to `/login`.",
+    "12. Theme Support: Full Dark Mode default with seamless Light Mode toggle using Tailwind CSS and `next-themes` or class switching. High contrast terminal feel with vibrant indicators."
+  ]
+}

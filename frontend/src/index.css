@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/outfit";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/jetbrains-mono";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: 'Outfit Variable', sans-serif;
+    --font-sans: 'Plus Jakarta Sans Variable', sans-serif;
+    --font-mono: 'JetBrains Mono Variable', monospace;
+    --color-bullish: var(--bullish);
+    --color-bearish: var(--bearish);
+    --color-technical: var(--technical);
+    --color-fundamental: var(--fundamental);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Light theme — clean paper terminal (design: page_light / panel_light) */
+:root {
+    --background: #F8FAFC;
+    --foreground: #0F172A;
+    --card: #FFFFFF;
+    --card-foreground: #0F172A;
+    --popover: #FFFFFF;
+    --popover-foreground: #0F172A;
+    --primary: #0284C7;
+    --primary-foreground: #FFFFFF;
+    --secondary: #E2E8F0;
+    --secondary-foreground: #0F172A;
+    --muted: #EEF2F7;
+    --muted-foreground: #475569;
+    --accent: #E2E8F0;
+    --accent-foreground: #0F172A;
+    --destructive: #E11D48;
+    --border: #E2E8F0;
+    --input: #CBD5E1;
+    --ring: #0284C7;
+    --chart-1: #0284C7;
+    --chart-2: #059669;
+    --chart-3: #D97706;
+    --chart-4: #E11D48;
+    --chart-5: #64748B;
+    --bullish: #059669;
+    --bearish: #E11D48;
+    --technical: #0284C7;
+    --fundamental: #D97706;
+    --radius: 0.625rem;
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #0F172A;
+    --sidebar-primary: #0284C7;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #E2E8F0;
+    --sidebar-accent-foreground: #0F172A;
+    --sidebar-border: #E2E8F0;
+    --sidebar-ring: #0284C7;
+}
+
+/* Dark theme — Deep Obsidian terminal (design: page_dark / panel_dark) */
+.dark {
+    --background: #0B0E14;
+    --foreground: #F1F5F9;
+    --card: #121824;
+    --card-foreground: #F8FAFC;
+    --popover: #121824;
+    --popover-foreground: #F8FAFC;
+    --primary: #00F2FE;
+    --primary-foreground: #050B14;
+    --secondary: #192231;
+    --secondary-foreground: #F8FAFC;
+    --muted: #161D2B;
+    --muted-foreground: #94A3B8;
+    --accent: #192231;
+    --accent-foreground: #F8FAFC;
+    --destructive: #F43F5E;
+    --border: #1E293B;
+    --input: #1E293B;
+    --ring: #00F2FE;
+    --chart-1: #00F2FE;
+    --chart-2: #34D399;
+    --chart-3: #FBBF24;
+    --chart-4: #38BDF8;
+    --chart-5: #FB7185;
+    --bullish: #10B981;
+    --bearish: #F43F5E;
+    --technical: #38BDF8;
+    --fundamental: #FBBF24;
+    --sidebar: #121824;
+    --sidebar-foreground: #F8FAFC;
+    --sidebar-primary: #00F2FE;
+    --sidebar-primary-foreground: #050B14;
+    --sidebar-accent: #192231;
+    --sidebar-accent-foreground: #F8FAFC;
+    --sidebar-border: #1E293B;
+    --sidebar-ring: #00F2FE;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
+  h1, h2, h3, h4 {
+    @apply font-heading;
+    }
+  ::selection {
+    background: color-mix(in oklch, var(--color-primary) 30%, transparent);
+  }
+}
+
+/* terminal scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-input) transparent;
+}
+
+/* print-to-PDF report layout */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
