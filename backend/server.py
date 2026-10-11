@@ -21,6 +21,7 @@ from lib import engine
 from lib.scheduler import scheduler_loop
 from routers import analysis as analysis_router
 from routers import auth as auth_router
+from routers import cron as cron_router
 from routers import evaluation as evaluation_router
 from routers import meta as meta_router
 from routers import settings as settings_router
@@ -99,6 +100,7 @@ api_router.include_router(analysis_router.router)
 api_router.include_router(evaluation_router.router)
 api_router.include_router(settings_router.router)
 api_router.include_router(watchlist_router.router)
+api_router.include_router(cron_router.router)
 api_router.include_router(meta_router.router)
 
 # Include the router in the main app

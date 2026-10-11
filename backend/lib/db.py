@@ -41,6 +41,14 @@ INDEXES: dict[str, list[IndexModel]] = {
     "settings": [
         IndexModel([("key", ASCENDING)], name="key_unique", unique=True),
     ],
+    "cron_runs": [
+        # idempotency keys for platform cron deliveries; expire after 7 days
+        IndexModel([("claimed_at", ASCENDING)], name="claimed_ttl", expireAfterSeconds=7 * 24 * 3600),
+    ],
+    "cron_log": [
+        IndexModel([("at", DESCENDING)], name="at_desc"),
+        IndexModel([("at", ASCENDING)], name="at_ttl", expireAfterSeconds=30 * 24 * 3600),
+    ],
     "watchlist": [
         # one star per user per pair; listed newest-first per user
         IndexModel(

@@ -359,6 +359,39 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground">
                 Data dikunci saat di-generate — membuka/menutup web tidak mengubah snapshot.
               </p>
+              <div
+                className="rounded-md border border-border bg-card p-2.5"
+                data-testid="scheduler-status"
+              >
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-bullish">
+                  <Activity className="size-3" />
+                  Penjadwal platform aktif
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Snapshot di-generate otomatis oleh server pada jadwalnya, walaupun tidak ada
+                  seorang pun yang membuka web.
+                </p>
+                {(status?.recent_cron_runs ?? []).length > 0 && (
+                  <ul className="mt-1.5 space-y-0.5" data-testid="cron-run-list">
+                    {(status?.recent_cron_runs ?? []).slice(0, 3).map((r, i) => (
+                      <li
+                        key={`${r.job}-${r.at}-${i}`}
+                        className="flex items-center justify-between gap-2 text-[11px]"
+                      >
+                        <span className="truncate font-mono text-muted-foreground">{r.job}</span>
+                        <span
+                          className={cn(
+                            "shrink-0 font-mono",
+                            r.status === "ok" ? "text-bullish" : "text-bearish"
+                          )}
+                        >
+                          {r.status === "ok" ? "ok" : "gagal"} · {relativeTime(r.at)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </CardContent>
           </Card>
 

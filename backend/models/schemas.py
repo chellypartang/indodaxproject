@@ -376,9 +376,18 @@ class SyncStatusOut(BaseModel):
     candidates_last_run: int = 0
 
 
+class CronRunOut(BaseModel):
+    job: str
+    status: str
+    detail: str | None = None
+    at: datetime | None = None
+
+
 class MetaStatusOut(BaseModel):
     server_time: datetime
     wita_time: str
     next_daily_run: datetime
     next_weekly_run: datetime
     sync: SyncStatusOut = SyncStatusOut()
+    scheduler: str = "platform-cron"
+    recent_cron_runs: list[CronRunOut] = []

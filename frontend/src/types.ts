@@ -285,10 +285,19 @@ export interface SyncStatusOut {
   candidates_last_run: number;
 }
 
+export interface CronRunOut {
+  job: string;
+  status: string;
+  detail: string | null;
+  at: string | null;
+}
+
 export interface MetaStatusOut {
   server_time: string;
   wita_time: string;
   next_daily_run: string;
   next_weekly_run: string;
   sync: SyncStatusOut;
+  scheduler: string;
+  recent_cron_runs: CronRunOut[];
 }

@@ -52,6 +52,31 @@ Theme: next-themes, default dark; fonts Outfit/Plus Jakarta Sans/JetBrains Mono;
 - CSV: `/api/evaluation/export/analysis/{kind}` (dashboard snapshot) and `/api/evaluation/export/evaluation/{kind}?days=` (evaluation ledger)
 - PDF: browser print (`window.print()`) with `PrintButton` on Dashboard / Evaluasi / Coin detail. `components/print-report.tsx` renders a paper-only report header; `@media print` in index.css forces the light report palette even in dark mode, hides nav/side rails/TradingView, and sets A4 margins + repeating table headers
 
+## Scheduling — runs with nobody watching
+The **Emergent platform cron is the authoritative scheduler**, defined in `.emergent/crons.yml`
+and fired by the platform itself, so snapshots generate on time even when no browser is open
+and no user session exists:
+
+| name | schedule | timezone | endpoint |
+|---|---|---|---|
+| `daily-snapshot` | `0 6 * * *` | Asia/Makassar | `/api/cron/daily-snapshot` |
+| `weekly-snapshot` | `0 6 * * 1` (Monday) | Asia/Makassar | `/api/cron/weekly-snapshot` |
+| `market-sampler` | `*/15 * * * *` | UTC | `/api/cron/sample` |
+
+`routers/cron.py` contract (per platform rules): constant-time `Authorization: Bearer
+$WEBHOOK_CRON_SECRET` (401 on anything else), envelope parsed (400 on bad JSON), delivery deduped on
+`X-Webhook-Id`/`run_id` via the `cron_runs` collection (unique `_id`, 7-day TTL), real work handed to
+an `asyncio` background task, and a **202 ack in ~16 ms** — never the full job synchronously.
+Outcomes land in `cron_log` (30-day TTL) and surface via `/api/meta/status.recent_cron_runs` in the
+dashboard's "Penjadwal Platform Aktif" card.
+
+`lib/scheduler.py` is now only a **catch-up safety net** (5-min tick, not the real schedule): boot
+catch-up for a window missed while the pod was down, finalization of closed windows, and a sampling
+backstop. Every operation is idempotent — unique index on `kind + period_start`, a 10-minute sample
+de-dupe gap, and `actuals_recorded` guarding finalization — so cron and the loop can never double-write.
+
+Secret lives in `backend/.env` as `WEBHOOK_CRON_SECRET` (never in crons.yml, frontend, or logs).
+
 ## Projection formula (est_gain_pct) — volume & trend are explicit factors
 `lib/indicators.py :: estimate_gain_pct()` returns `(est, breakdown)`:
 

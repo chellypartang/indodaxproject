@@ -1,0 +1,32 @@
+crons:
+  # Snapshot harian: 06:00 WITA (Asia/Makassar) tiap hari.
+  # Dijalankan oleh platform, bukan oleh proses aplikasi, sehingga tetap jalan
+  # walaupun tidak ada satu pun pengguna yang membuka web.
+  - name: daily-snapshot
+    description: "Generate snapshot Top 10 Koin Bullish harian setiap 06:00 WITA"
+    cron: "0 6 * * *"
+    timezone: "Asia/Makassar"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/daily-snapshot"
+    method: POST
+    enabled: true
+
+  # Snapshot mingguan: Senin 06:00 WITA (day-of-week 1 = Monday).
+  - name: weekly-snapshot
+    description: "Generate snapshot Top 10 Koin Bullish mingguan setiap Senin 06:00 WITA"
+    cron: "0 6 * * 1"
+    timezone: "Asia/Makassar"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/weekly-snapshot"
+    method: POST
+    enabled: true
+
+  # Sampling harga tiap 15 menit: menjaga pelacakan Actual High dan status sinkronisasi
+  # tetap hidup sepanjang window, lalu menutup snapshot yang sudah lewat periodenya.
+  - name: market-sampler
+    description: "Rekam sampel harga Indodax tiap 15 menit untuk pelacakan Actual High"
+    cron: "*/15 * * * *"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/sample"
+    method: POST
+    enabled: true

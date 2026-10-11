@@ -1,14 +1,22 @@
-"""Background scheduler — ticks every 30s and:
+"""In-pod catch-up safety net.
 
-1. every 15 minutes: samples Indodax ticker_all -> price_history + running Actual High
-   tracking for live snapshots + sync status refresh
-2. finalizes snapshots whose window closed (locks Actual High results)
-3. guarantees a locked snapshot exists for the current daily (06:00 WITA) and
-   weekly (Monday 06:00 WITA) windows — the 06:00 WITA rollover lands here
+The AUTHORITATIVE scheduler is the Emergent platform cron (.emergent/crons.yml ->
+routers/cron.py), which fires the 06:00 WITA snapshots regardless of whether anyone has
+the app open. This loop exists only as a safety net for the gaps a platform cron cannot
+cover by itself:
+
+  1. boot catch-up — if the pod was down at 06:00 WITA, the missed window is generated as
+     soon as the backend comes back up (ensure_current)
+  2. finalization — closes snapshots whose window ended while the pod was asleep
+  3. sampling backstop — keeps Actual High tracking alive if a cron delivery is missed
+
+Everything it calls is idempotent (unique index on kind+period_start, sample de-dupe
+window, finalize guarded by actuals_recorded), so cron and this loop can never double-write.
 """
 
+import asyncio
 import logging
-import time
+from datetime import timedelta
 
 import httpx
 
@@ -18,12 +26,17 @@ from lib.db import db
 
 logger = logging.getLogger(__name__)
 
-TICK_SECONDS = 30
-SAMPLE_SECONDS = 15 * 60
-_last_sample = 0.0
+TICK_SECONDS = 300          # safety net only — the platform cron drives the real schedule
+SAMPLE_MIN_GAP_MINUTES = 10  # skip if a sample already landed this recently (cron or loop)
 
 
-async def _sample(now) -> None:
+async def sample_market(now) -> bool:
+    """Record one Indodax ticker sample + running Actual Highs. Skips if one is recent."""
+    recent = await db.price_history.find_one(
+        {"ts": {"$gte": now - timedelta(minutes=SAMPLE_MIN_GAP_MINUTES)}}, {"_id": 1}
+    )
+    if recent:
+        return False
     try:
         async with httpx.AsyncClient(follow_redirects=True) as client:
             tickers = await market.get_ticker_all(client)
@@ -35,29 +48,28 @@ async def _sample(now) -> None:
             last_ticker_sync_at=now, last_ticker_ok=True, last_ticker_error=None,
             universe_count=len(prices),
         )
+        return True
     except Exception as exc:
         logger.warning("price sample failed: %s", exc)
         await engine._set_sync(last_ticker_ok=False, last_ticker_error=str(exc)[:500])
+        return False
 
 
 async def tick() -> None:
-    global _last_sample
     now = now_utc()
-    if time.time() - _last_sample >= SAMPLE_SECONDS:
-        _last_sample = time.time()
-        await _sample(now)
+    await sample_market(now)
     await engine.finalize_due(now)
     await engine.ensure_current(now)
 
 
 async def scheduler_loop() -> None:
-    logger.info("scheduler started (tick %ss, sample %ss)", TICK_SECONDS, SAMPLE_SECONDS)
+    logger.info(
+        "catch-up loop started (tick %ss); platform cron in .emergent/crons.yml is the primary scheduler",
+        TICK_SECONDS,
+    )
     while True:
         try:
             await tick()
         except Exception:
-            logger.exception("scheduler tick failed")
+            logger.exception("catch-up tick failed")
         await asyncio.sleep(TICK_SECONDS)
-
-
-import asyncio  # noqa: E402  (kept at bottom to keep the loop signature readable)
