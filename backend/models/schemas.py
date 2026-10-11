@@ -252,6 +252,11 @@ class MonthlyEvalResponse(BaseModel):
 # ---------- meta ----------
 
 
+class PricePoint(BaseModel):
+    ts: datetime
+    price: float
+
+
 class SyncStatusOut(BaseModel):
     last_ticker_sync_at: datetime | None = None
     last_ticker_ok: bool = True

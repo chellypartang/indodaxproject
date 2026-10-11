@@ -160,9 +160,27 @@
 
 /* print-to-PDF report layout */
 @media print {
-  body {
+  @page {
+    margin: 14mm;
+    size: A4 portrait;
+  }
+  /* force the light report palette regardless of the on-screen theme */
+  html, html.dark, body {
     background: #ffffff !important;
     color: #0f172a !important;
+  }
+  html.dark {
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #475569;
+    --border: #cbd5e1;
+    --bullish: #047857;
+    --bearish: #be123c;
+    --technical: #0369a1;
+    --fundamental: #b45309;
   }
   .print\:hidden {
     display: none !important;
@@ -170,6 +188,21 @@
   * {
     animation: none !important;
     transition: none !important;
+    box-shadow: none !important;
+  }
+  table {
+    page-break-inside: auto;
+    width: 100% !important;
+    font-size: 10.5px !important;
+  }
+  tr, img {
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+  a[href]::after {
+    content: "";
   }
 }
 

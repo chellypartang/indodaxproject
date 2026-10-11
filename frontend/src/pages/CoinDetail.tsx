@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ExternalLink,
   Gauge,
+  LineChart as LineChartIcon,
   Newspaper,
   Target,
   TrendingDown,
@@ -16,6 +17,8 @@ import {
 import { apiGet } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita, relativeTime } from "@/lib/format";
 import { SentimentChip, ScoreBar, TrendBadge, VolumeTrendBadge, scoreTone } from "@/components/bits";
+import PriceHistoryChart from "@/components/price-history-chart";
+import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import type { SnapshotItem } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +27,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-function TradingViewChart({ coin }: { coin: string }) {
+// TradingView symbol is derived from the exchange our candles actually came from, so a
+// small-cap Indodax coin never renders the widget's "symbol not available" error screen.
+function tvSymbol(coin: string, source: string): string | null {
+  const c = coin.toUpperCase();
+  if (source === "okx") return `OKX:${c}USDT`;
+  if (source === "coinbase") return `COINBASE:${c}USD`;
+  return null; // indodax_trades / indodax_ticker — not listed on a global venue we can chart
+}
+
+function TradingViewChart({ coin, symbol }: { coin: string; symbol: string }) {
   const { theme } = useTheme();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -41,7 +53,7 @@ function TradingViewChart({ coin }: { coin: string }) {
     script.type = "text/javascript";
     script.innerHTML = JSON.stringify({
       autosize: true,
-      symbol: `BINANCE:${coin.toUpperCase()}USDT`,
+      symbol,
       interval: "60",
       timezone: "Asia/Makassar",
       theme: theme === "light" ? "light" : "dark",
@@ -52,18 +64,44 @@ function TradingViewChart({ coin }: { coin: string }) {
       support_host: "https://www.tradingview.com",
     });
     host.appendChild(script);
-  }, [coin, theme]);
+  }, [symbol, theme]);
 
   return (
     <div className="relative h-[420px] w-full overflow-hidden rounded-lg border border-border">
       <div ref={ref} className="tradingview-widget-container h-full w-full" data-testid="tradingview-widget" />
       <a
-        href={`https://www.tradingview.com/chart/?symbol=BINANCE%3A${coin.toUpperCase()}USDT`}
+        href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`}
         target="_blank"
         rel="noreferrer"
         className="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded-md border border-border bg-background/80 px-2 py-1 text-[11px] text-muted-foreground backdrop-blur"
       >
         Buka di TradingView <ExternalLink className="size-3" />
+      </a>
+    </div>
+  );
+}
+
+function NoGlobalChart({ coin }: { coin: string }) {
+  return (
+    <div
+      data-testid="tradingview-unavailable"
+      className="flex h-[220px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 text-center"
+    >
+      <LineChartIcon className="size-7 text-muted-foreground" />
+      <div>
+        <p className="text-sm font-semibold">{coin.toUpperCase()} belum terdaftar di bursa global</p>
+        <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+          Koin ini hanya diperdagangkan di Indodax, jadi chart candlestick global tidak tersedia.
+          Gunakan grafik harga Indodax di bawah — datanya direkam langsung dari API Indodax.
+        </p>
+      </div>
+      <a
+        href={`https://www.tradingview.com/search/?query=${encodeURIComponent(coin)}`}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-1 text-xs text-technical hover:underline"
+      >
+        Cari manual di TradingView <ExternalLink className="size-3" />
       </a>
     </div>
   );
@@ -167,6 +205,7 @@ export default function CoinDetail() {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-4">
+          <PrintButton testId="print-coin-report-button" label="PDF" />
           <Tabs value={kind} onValueChange={(v) => setParams({ kind: v })}>
             <TabsList>
               <TabsTrigger value="daily" data-testid="coin-kind-tab-daily">Harian</TabsTrigger>
@@ -175,6 +214,16 @@ export default function CoinDetail() {
           </Tabs>
         </div>
       </div>
+
+      <PrintReportHeader
+        title={coin ? `Analisis Hybrid — ${coin.name}/IDR` : "Analisis Hybrid"}
+        subtitle={`Periode ${kind === "daily" ? "harian (06:00–05:59 WITA)" : "mingguan (Senin ke Senin)"}`}
+        meta={
+          coin
+            ? `Skor hybrid ${coin.score.toFixed(1)} · TA ${coin.technical_score.toFixed(1)} · FA ${coin.fundamental_score.toFixed(1)} · estimasi ${fmtPct(coin.est_gain_pct)}`
+            : undefined
+        }
+      />
 
       {isLoading || !coin ? (
         <div className="space-y-4">
@@ -240,14 +289,23 @@ export default function CoinDetail() {
           <div className="grid gap-6 lg:grid-cols-12">
             {/* left: chart + technical matrix */}
             <div className="space-y-6 lg:col-span-8">
-              <Card>
+              <Card className="print:hidden">
                 <CardHeader>
                   <CardTitle className="font-heading">Chart Interaktif</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <TradingViewChart coin={coin.coin} />
+                  {(() => {
+                    const symbol = tvSymbol(coin.coin, tech?.source ?? "");
+                    return symbol ? (
+                      <TradingViewChart coin={coin.coin} symbol={symbol} />
+                    ) : (
+                      <NoGlobalChart coin={coin.coin} />
+                    );
+                  })()}
                 </CardContent>
               </Card>
+
+              <PriceHistoryChart pair={coin.pair} hours={kind === "daily" ? 24 : 168} />
 
               <Card data-testid="technical-matrix">
                 <CardHeader>

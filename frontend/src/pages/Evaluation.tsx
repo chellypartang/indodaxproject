@@ -16,6 +16,7 @@ import { CalendarClock, CheckCircle2, Download, Scale, Target, TrendingUp } from
 import { apiGet } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita } from "@/lib/format";
 import type { EvalResponse, MonthlyEvalResponse } from "@/types";
+import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -130,15 +131,18 @@ function PeriodEvalTab({ kind }: { kind: "daily" | "weekly" }) {
                   {latest.snapshot.approximated && " · actual diaproksimasi (server tidak aktif saat rollover)"}
                 </p>
               </div>
-              <a
-                href={`/api/evaluation/export/evaluation/${kind}`}
-                download
-                data-testid={`export-eval-csv-${kind}`}
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                <Download className="size-3.5" />
-                CSV
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`/api/evaluation/export/evaluation/${kind}`}
+                  download
+                  data-testid={`export-eval-csv-${kind}`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <Download className="size-3.5" />
+                  CSV
+                </a>
+                <PrintButton testId={`print-eval-button-${kind}`} label="PDF" />
+              </div>
             </CardHeader>
             <CardContent>
               <Table data-testid={`eval-table-${kind}`}>
@@ -353,6 +357,10 @@ function MonthlyTab() {
 export default function Evaluation() {
   return (
     <div className="space-y-6">
+      <PrintReportHeader
+        title="Laporan Evaluasi Kinerja & Akurasi Proyeksi"
+        subtitle="Proyeksi estimasi kenaikan vs Actual High aktual — window harian 06:00–05:59 WITA, mingguan Senin ke Senin"
+      />
       <div>
         <h1 className="font-heading text-2xl font-bold tracking-tight">Evaluasi Kinerja & Akurasi Proyeksi</h1>
         <p className="mt-1 text-sm text-muted-foreground">

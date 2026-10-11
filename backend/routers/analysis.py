@@ -1,6 +1,7 @@
 """Analysis routes — locked snapshot reads, history, admin force-refresh, live coin detail."""
 
 import asyncio
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -10,6 +11,7 @@ from lib.dates import now_utc
 from lib.db import db
 from models.schemas import (
     CurrentAnalysis,
+    PricePoint,
     RefreshIn,
     Snapshot,
     SnapshotSummary,
@@ -64,6 +66,21 @@ async def get_snapshot(snapshot_id: str):
 async def refresh(body: RefreshIn, _admin: dict = Depends(require_admin)):
     doc = await engine.generate_snapshot(body.kind, force=True)
     return Snapshot(**engine.snapshot_out(doc))
+
+
+@router.get("/coin/{pair}/history", response_model=list[PricePoint])
+async def coin_price_history(pair: str, hours: int = Query(24, le=168), _user: dict = Depends(get_current_user)):
+    """Indodax-native price samples (15-min scheduler ticks) — feeds the coin-page trend chart."""
+    since = now_utc() - timedelta(hours=hours)
+    docs = await db.price_history.find(
+        {"ts": {"$gte": since}}, {"ts": 1, "prices." + pair: 1}
+    ).sort("ts", 1).to_list(300)
+    points = [
+        PricePoint(ts=engine.aware_or_none(d["ts"]) or now_utc(), price=float(p))
+        for d in docs
+        if (p := (d.get("prices") or {}).get(pair))
+    ]
+    return points
 
 
 @router.get("/coin/{pair}", response_model=SnapshotItem)

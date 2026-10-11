@@ -8,6 +8,7 @@ import { ApiError, apiGet, apiPost } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita, fmtWitaRange, relativeTime } from "@/lib/format";
 import { useMe } from "@/hooks/useAuth";
 import { ScoreBar, scoreTone } from "@/components/bits";
+import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import { Countdown } from "@/components/app-shell";
 import type { CurrentAnalysis, MetaStatusOut, Snapshot, SnapshotItem } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +125,7 @@ function SnapshotHeader({ kind, snapshot, generating }: { kind: Kind; snapshot: 
           </Badge>
         )}
         <a
-          href={`/api/export/analysis/${kind}`}
+          href={`/api/evaluation/export/analysis/${kind}`}
           download
           data-testid={`export-csv-button-${kind}`}
           className={buttonVariants({ variant: "outline", size: "sm" })}
@@ -132,6 +133,7 @@ function SnapshotHeader({ kind, snapshot, generating }: { kind: Kind; snapshot: 
           <Download className="size-3.5" />
           CSV
         </a>
+        <PrintButton testId={`print-snapshot-button-${kind}`} label="PDF" />
         {me?.role === "admin" && (
           <Button
             variant="outline"
@@ -198,10 +200,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <PrintReportHeader
+        title={`Laporan Top 10 Koin Bullish — ${kind === "daily" ? "Harian" : "Mingguan"}`}
+        subtitle={snapshot ? fmtWitaRange(snapshot.period_start, snapshot.period_end) : undefined}
+        meta={
+          snapshot
+            ? `Snapshot terkunci dibuat ${fmtWita(snapshot.generated_at)} · bobot TA ${snapshot.weights.technical}% / FA ${snapshot.weights.fundamental}%`
+            : undefined
+        }
+      />
+
       {/* stat strip */}
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {stats.map((s) => (
-          <Card key={s.label} size="sm" data-testid={s.testId}>
+          <Card key={s.label} size="sm" data-testid={s.testId} className="print:hidden">
             <CardContent className="pt-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</p>
               <p className={cn("mt-1 font-mono text-lg font-semibold tabular-nums", s.tone)}>{s.value}</p>
@@ -212,7 +224,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-12">
         {/* snapshot panel */}
-        <Card className="lg:col-span-8">
+        <Card className="lg:col-span-8 print:col-span-12 print:border-0 print:shadow-none">
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -247,7 +259,7 @@ export default function Dashboard() {
         </Card>
 
         {/* side rail */}
-        <div className="space-y-4 lg:col-span-4">
+        <div className="space-y-4 lg:col-span-4 print:hidden">
           <Card size="sm" data-testid="countdown-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-heading text-base">

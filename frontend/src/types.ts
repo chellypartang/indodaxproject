@@ -177,6 +177,11 @@ export interface MonthlyEvalResponse {
   overall: MonthlyOverall;
 }
 
+export interface PricePoint {
+  ts: string;
+  price: number;
+}
+
 export interface SyncStatusOut {
   last_ticker_sync_at: string | null;
   last_ticker_ok: boolean;
