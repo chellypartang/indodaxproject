@@ -10,6 +10,7 @@ from lib.auth import get_current_user, require_admin
 from lib.dates import now_utc
 from lib.db import db
 from models.schemas import (
+    CandleSeries,
     CurrentAnalysis,
     PricePoint,
     RefreshIn,
@@ -81,6 +82,17 @@ async def coin_price_history(pair: str, hours: int = Query(24, le=168), _user: d
         if (p := (d.get("prices") or {}).get(pair))
     ]
     return points
+
+
+@router.get("/coin/{pair}/candles", response_model=CandleSeries)
+async def coin_candles(
+    pair: str,
+    bucket: int = Query(15, ge=5, le=240),
+    hours: int = Query(24, ge=1, le=168),
+    _user: dict = Depends(get_current_user),
+):
+    """Indodax-native OHLC candles — used when the coin has no global candlestick chart."""
+    return CandleSeries(**await engine.indodax_candles(pair, bucket, hours))
 
 
 @router.get("/coin/{pair}", response_model=SnapshotItem)

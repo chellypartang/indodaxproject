@@ -549,6 +549,95 @@ async def accuracy_by_coin(kind: str, limit_snapshots: int = 90, min_appearances
     }
 
 
+async def indodax_candles(pair: str, bucket_minutes: int = 15, hours: int = 24) -> dict:
+    """Indodax-native OHLC candles — the chart for coins with no global listing.
+
+    Indodax has no OHLC endpoint, so candles are built from two Indodax-only sources:
+      1. `/api/trades/{pair}` — the last 500 trades, bucketed into true OHLCV candles
+         (for thin coins this spans 15-20h; for very liquid ones only ~1h).
+      2. `price_history` — our own 15-min ticker samples, aggregated per bucket to
+         backfill buckets older than the trade window.
+    Trade-derived candles always win where both exist.
+    """
+    bucket = max(5, min(240, bucket_minutes)) * 60
+    since = now_utc() - timedelta(hours=hours)
+    pair_id = pair.replace("_", "")
+
+    trade_candles: list[dict] = []
+    try:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            trades = await market.get_trades(client, pair_id)
+        trade_candles = market.candles_from_trades(trades, bucket // 60)
+    except Exception as exc:
+        logger.warning("indodax_candles trades(%s): %s", pair, exc)
+
+    buckets: dict[int, dict] = {}
+    oldest_trade_slot: int | None = None
+    for c in trade_candles:
+        if datetime.fromtimestamp(c["ts"], tz=timezone.utc) < since:
+            continue
+        slot = int(c["ts"] // bucket) * bucket
+        buckets[slot] = {**c, "ts": slot, "from_trades": True}
+        oldest_trade_slot = slot if oldest_trade_slot is None else min(oldest_trade_slot, slot)
+
+    # backfill older buckets from our stored ticker samples
+    docs = await db.price_history.find(
+        {"ts": {"$gte": since}}, {"ts": 1, "prices." + pair: 1}
+    ).sort("ts", 1).to_list(500)
+    sample_buckets: dict[int, list[float]] = {}
+    for d in docs:
+        price = (d.get("prices") or {}).get(pair)
+        if not price:
+            continue
+        ts = _aware(d["ts"]).timestamp()
+        slot = int(ts // bucket) * bucket
+        if oldest_trade_slot is not None and slot >= oldest_trade_slot:
+            continue  # inside the trade window — real candles already cover it
+        sample_buckets.setdefault(slot, []).append(float(price))
+
+    for slot, prices in sample_buckets.items():
+        buckets[slot] = {
+            "ts": slot,
+            "o": prices[0],
+            "h": max(prices),
+            "l": min(prices),
+            "c": prices[-1],
+            "v": 0.0,
+            "from_trades": False,
+        }
+
+    ordered = [buckets[k] for k in sorted(buckets)]
+    from_trades = sum(1 for c in ordered if c["from_trades"])
+    candles = [
+        {
+            "ts": datetime.fromtimestamp(c["ts"], tz=timezone.utc),
+            "o": c["o"], "h": c["h"], "l": c["l"], "c": c["c"], "v": c["v"],
+            "from_trades": c["from_trades"],
+        }
+        for c in ordered
+    ]
+
+    if from_trades and from_trades < len(candles):
+        note = (
+            f"{from_trades} candle OHLC dari trade Indodax, "
+            f"{len(candles) - from_trades} candle lama direkonstruksi dari sampel harga server"
+        )
+    elif from_trades:
+        note = f"{from_trades} candle OHLC asli dari trade Indodax (500 transaksi terakhir)"
+    elif candles:
+        note = f"{len(candles)} candle direkonstruksi dari sampel harga Indodax (tiap 15 menit)"
+    else:
+        note = "Belum ada data trade maupun sampel harga untuk pair ini"
+
+    return {
+        "pair": pair,
+        "bucket_minutes": bucket // 60,
+        "source": "indodax_trades" if from_trades else ("indodax_samples" if candles else "none"),
+        "note": note,
+        "candles": candles,
+    }
+
+
 def _wita_tz():
     from lib.dates import WITA
     return WITA

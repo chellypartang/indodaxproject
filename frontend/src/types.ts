@@ -221,6 +221,24 @@ export interface PricePoint {
   price: number;
 }
 
+export interface Candle {
+  ts: string;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v: number;
+  from_trades: boolean;
+}
+
+export interface CandleSeries {
+  pair: string;
+  bucket_minutes: number;
+  source: string;
+  note: string;
+  candles: Candle[];
+}
+
 export interface SyncStatusOut {
   last_ticker_sync_at: string | null;
   last_ticker_ok: boolean;

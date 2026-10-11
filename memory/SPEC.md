@@ -31,7 +31,7 @@ dark/light mode. UI copy is Indonesian-first; WITA = Asia/Makassar (UTC+8).
 ## API (all under /api, routers mounted in server.py)
 - `/auth/login|logout|me` — httpOnly JWT cookie session (SESSION_SECRET in .env)
 - `/users` GET, POST (invite → returns initial_password once), `/{id}/password` PATCH (reset), `/{id}` DELETE — admin only
-- `/analysis/current?kind=` , `/analysis/history?kind=&limit=`, `/analysis/snapshot/{id}`, `/analysis/coin/{pair}?kind=` (live, 2-min cache), `/analysis/coin/{pair}/history?hours=` (Indodax price samples for the coin trend chart, max 168h), `/analysis/refresh` POST (admin, force regenerate)
+- `/analysis/current?kind=` , `/analysis/history?kind=&limit=`, `/analysis/snapshot/{id}`, `/analysis/coin/{pair}?kind=` (live, 2-min cache), `/analysis/coin/{pair}/history?hours=` (price samples for the IDR line chart, max 168h), `/analysis/coin/{pair}/candles?bucket=15..240&hours=1..168` (Indodax-native OHLC candles), `/analysis/refresh` POST (admin, force regenerate)
 - `/evaluation/daily|weekly|monthly`, `/evaluation/by-coin?kind=&min_appearances=` (per-coin model reliability, sorted by hit rate → sample size → |deviation|), `/evaluation/export/analysis/{kind}`, `/evaluation/export/evaluation/{kind}?days=30` (CSV)
 - `/watchlist` GET (enriched list), POST {pair} (idempotent upsert, 404 on unknown pair, 400 past 25), `/watchlist/{pair}` DELETE — per-user, any role
 - `/settings/weights` GET, `/settings/weights/{kind}` PUT (admin, must sum 100)
@@ -53,9 +53,10 @@ Theme: next-themes, default dark; fonts Outfit/Plus Jakarta Sans/JetBrains Mono;
 - PDF: browser print (`window.print()`) with `PrintButton` on Dashboard / Evaluasi / Coin detail. `components/print-report.tsx` renders a paper-only report header; `@media print` in index.css forces the light report palette even in dark mode, hides nav/side rails/TradingView, and sets A4 margins + repeating table headers
 
 ## Charts
-- **TradingView Advanced Chart** (coin page): symbol derived from the exchange our candles came from — `okx` → `OKX:{COIN}USDT`, `coinbase` → `COINBASE:{COIN}USD`. Indodax-only coins (`indodax_trades`/`indodax_ticker` source) render `NoGlobalChart` explanatory fallback instead, so the widget never shows its "symbol not available" error
-- **Price history** (coin page): `PriceHistoryChart` recharts area chart over our own 15-min Indodax samples (24h daily / 168h weekly); shows a "collecting samples" state under 2 points
-- **Evaluation trends**: recharts line/bar over snapshot history + 30-day monthly recap
+- **Globally-listed coins** (candles sourced from OKX/Coinbase): TradingView Advanced Chart — symbol derived from that same venue (`okx` → `OKX:{COIN}USDT`, `coinbase` → `COINBASE:{COIN}USD`), plus the `PriceHistoryChart` IDR line below it for the Indodax-quoted view
+- **Indodax-only coins** (`indodax_trades`/`indodax_ticker` source): no TradingView at all — `IndodaxCandleChart` is the primary chart, a real candlestick series built server-side by `engine.indodax_candles()` from `/api/trades/{pair}` (last 500 trades → true OHLCV buckets, typically 17-20h of history for thin coins) and backfilled for older buckets from our `price_history` samples. A short note card above explains why TradingView is absent and links to a manual TradingView search. Bucket selector: 15m / 1h; window fixed at 24h (the Indodax trade feed does not reach further)
+- Recharts has no candlestick series, so `IndodaxCandleChart` draws a range `Bar` (`[low, high]`) with a custom shape: wick line plus an open/close body, mapping prices into the bar's pixel box. Hollow body = bearish, filled = bullish
+- **Evaluation trends**: recharts line/bar over snapshot history, 30-day monthly recap, and per-coin reliability bars
 
 ## Roles & credentials
 - **Admin**: chellypartang@gmail.com / Chelpar031 (also in backend/.env as ADMIN_EMAIL/ADMIN_PASSWORD; seeded idempotently on startup + by seed.py)

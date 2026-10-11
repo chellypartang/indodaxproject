@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   ExternalLink,
   Gauge,
-  LineChart as LineChartIcon,
   Newspaper,
   Target,
   TrendingDown,
@@ -18,6 +17,7 @@ import { apiGet } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita, relativeTime } from "@/lib/format";
 import { SentimentChip, ScoreBar, TrendBadge, VolumeTrendBadge, scoreTone } from "@/components/bits";
 import PriceHistoryChart from "@/components/price-history-chart";
+import IndodaxCandleChart from "@/components/indodax-candle-chart";
 import { StarToggle, useWatchlist } from "@/hooks/useWatchlist";
 import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import type { SnapshotItem } from "@/types";
@@ -86,21 +86,20 @@ function NoGlobalChart({ coin }: { coin: string }) {
   return (
     <div
       data-testid="tradingview-unavailable"
-      className="flex h-[220px] flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 text-center"
+      className="flex flex-col gap-2 rounded-lg border border-dashed border-border px-4 py-3"
     >
-      <LineChartIcon className="size-7 text-muted-foreground" />
-      <div>
-        <p className="text-sm font-semibold">{coin.toUpperCase()} belum terdaftar di bursa global</p>
-        <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-          Koin ini hanya diperdagangkan di Indodax, jadi chart candlestick global tidak tersedia.
-          Gunakan grafik harga Indodax di bawah — datanya direkam langsung dari API Indodax.
-        </p>
-      </div>
+      <p className="text-sm font-semibold">
+        {coin.toUpperCase()} belum terdaftar di bursa global — memakai candlestick Indodax
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Koin ini hanya diperdagangkan di Indodax, jadi chart TradingView tidak tersedia. Grafik di
+        bawah dibentuk langsung dari transaksi dan sampel harga API Indodax.
+      </p>
       <a
         href={`https://www.tradingview.com/search/?query=${encodeURIComponent(coin)}`}
         target="_blank"
         rel="noreferrer"
-        className="flex items-center gap-1 text-xs text-technical hover:underline"
+        className="flex w-fit items-center gap-1 text-xs text-technical hover:underline"
       >
         Cari manual di TradingView <ExternalLink className="size-3" />
       </a>
@@ -172,6 +171,9 @@ export default function CoinDetail() {
   const fund = coin?.fundamental;
   const { data: watchlist } = useWatchlist();
   const isStarred = (watchlist ?? []).some((w) => w.pair === pair);
+  // Which chart the coin gets: a global candlestick when the venue our candles came from
+  // can be charted, otherwise the Indodax-native candlestick below.
+  const globalSymbol = coin ? tvSymbol(coin.coin, coin.technical?.source ?? "") : null;
 
   if (isError) {
     return (
@@ -293,23 +295,25 @@ export default function CoinDetail() {
           <div className="grid gap-6 lg:grid-cols-12">
             {/* left: chart + technical matrix */}
             <div className="space-y-6 lg:col-span-8">
-              <Card className="print:hidden">
-                <CardHeader>
-                  <CardTitle className="font-heading">Chart Interaktif</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const symbol = tvSymbol(coin.coin, tech?.source ?? "");
-                    return symbol ? (
-                      <TradingViewChart coin={coin.coin} symbol={symbol} />
-                    ) : (
-                      <NoGlobalChart coin={coin.coin} />
-                    );
-                  })()}
-                </CardContent>
-              </Card>
+              {globalSymbol ? (
+                <Card className="print:hidden">
+                  <CardHeader>
+                    <CardTitle className="font-heading">Chart Interaktif</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <TradingViewChart coin={coin.coin} symbol={globalSymbol} />
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  <NoGlobalChart coin={coin.coin} />
+                  <IndodaxCandleChart pair={coin.pair} name={coin.name} />
+                </div>
+              )}
 
-              <PriceHistoryChart pair={coin.pair} hours={kind === "daily" ? 24 : 168} />
+              {/* IDR line chart complements the USD-quoted global candles; redundant when the
+                  Indodax candlestick above is already the primary chart. */}
+              {globalSymbol && <PriceHistoryChart pair={coin.pair} hours={kind === "daily" ? 24 : 168} />}
 
               <Card data-testid="technical-matrix">
                 <CardHeader>

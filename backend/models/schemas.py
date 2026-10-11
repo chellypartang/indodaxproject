@@ -307,6 +307,24 @@ class PricePoint(BaseModel):
     price: float
 
 
+class Candle(BaseModel):
+    ts: datetime
+    o: float
+    h: float
+    l: float
+    c: float
+    v: float = 0.0
+    from_trades: bool = True
+
+
+class CandleSeries(BaseModel):
+    pair: str
+    bucket_minutes: int
+    source: str
+    note: str
+    candles: list[Candle] = []
+
+
 class SyncStatusOut(BaseModel):
     last_ticker_sync_at: datetime | None = None
     last_ticker_ok: bool = True
