@@ -151,6 +151,7 @@ def technical_detail(candles: list[dict], timeframe: str = "daily", source: str 
         "resistance": resistance,
         "range_position": round(pos, 3),
         "volume_trend": volume_trend,
+        "volume_ratio": round(vol_ratio, 3),
         "trend": trend,
         "change_pct": round(change_pct, 2),
         "score": score,
@@ -159,20 +160,99 @@ def technical_detail(candles: list[dict], timeframe: str = "daily", source: str 
     }
 
 
-def estimate_gain_pct(detail: dict, entry_idr: float, kind: str) -> float:
-    """Deterministic upside estimate (%) — distance to resistance, momentum-adjusted."""
-    est = 0.0
+def estimate_gain_pct(
+    detail: dict,
+    entry_idr: float,
+    kind: str,
+    vol_idr: float | None = None,
+) -> tuple[float, dict]:
+    """Deterministic upside estimate (%) with an auditable factor breakdown.
+
+    est = headroom(to resistance) x trend x volume x liquidity + momentum, x horizon
+
+    - headroom   : distance from price to resistance, scaled by the technical score
+    - trend      : explicit multiplier from the MA/MACD trend verdict + MA stacking
+    - volume     : explicit multiplier from the recent-vs-prior volume ratio
+                   (a breakout on rising volume is worth more than one on fading volume)
+    - liquidity  : damps thin markets, where any projection is mostly noise (uses 24h IDR turnover)
+    - momentum   : small RSI/MACD kicker
+    - horizon    : weekly windows get more room to run than daily ones
+    """
+    score = float(detail.get("score") or 50.0)
+
+    # --- headroom to resistance
+    headroom = 0.0
     if detail.get("resistance") and entry_idr:
-        res_idr = detail["resistance"]
-        dist = (res_idr - entry_idr) / entry_idr * 100.0
-        est += max(0.1, min(12.0, dist)) * (0.6 + detail.get("score", 50.0) / 125.0)
+        dist = (detail["resistance"] - entry_idr) / entry_idr * 100.0
+        headroom = max(0.1, min(12.0, dist)) * (0.6 + score / 125.0)
+
+    # --- TREND factor (explicit)
+    trend = detail.get("trend") or "netral"
+    trend_factor = {"bullish": 1.18, "netral": 1.0, "bearish": 0.78}.get(trend, 1.0)
+    sma20, sma50 = detail.get("sma20"), detail.get("sma50")
+    if sma20 and sma50 and entry_idr:
+        if entry_idr > sma20 > sma50:
+            trend_factor *= 1.08  # full bullish MA stack
+        elif entry_idr < sma20 < sma50:
+            trend_factor *= 0.90  # full bearish MA stack
+    trend_factor = round(min(1.30, max(0.70, trend_factor)), 3)
+
+    # --- VOLUME factor (explicit): participation behind the move
+    ratio = detail.get("volume_ratio")
+    if ratio is None:
+        volume_factor = 1.0
+    elif ratio >= 2.0:
+        volume_factor = 1.30
+    elif ratio >= 1.5:
+        volume_factor = 1.20
+    elif ratio >= 1.2:
+        volume_factor = 1.10
+    elif ratio >= 0.8:
+        volume_factor = 1.0
+    elif ratio >= 0.5:
+        volume_factor = 0.88
+    else:
+        volume_factor = 0.75
+
+    # --- liquidity damping: a thin orderbook cannot be trusted to deliver the move
+    if vol_idr is None:
+        liquidity_factor = 1.0
+    elif vol_idr >= 5_000_000_000:
+        liquidity_factor = 1.0
+    elif vol_idr >= 1_000_000_000:
+        liquidity_factor = 0.97
+    elif vol_idr >= 100_000_000:
+        liquidity_factor = 0.92
+    elif vol_idr >= 10_000_000:
+        liquidity_factor = 0.85
+    else:
+        liquidity_factor = 0.75
+
+    # --- momentum kicker
+    momentum = 0.0
     if detail.get("rsi"):
-        est += max(0.0, detail["rsi"] - 50.0) * 0.03
-    if detail.get("macd_hist", 0) > 0:
-        est += 0.2
-    if kind == "weekly":
-        est *= 1.6
-    if est <= 0 and entry_idr:
-        # ticker-only fallback: room back to the 24h high
-        pass
-    return round(max(0.2, min(30.0, est)), 2)
+        momentum += max(0.0, float(detail["rsi"]) - 50.0) * 0.03
+    if (detail.get("macd_hist") or 0) > 0:
+        momentum += 0.2
+
+    horizon_factor = 1.6 if kind == "weekly" else 1.0
+    # Cap scales with the horizon: a 30% ceiling on a weekly window pinned nearly every
+    # strong candidate at the cap and destroyed the descending ranking.
+    cap = 60.0 if kind == "weekly" else 30.0
+    raw = (headroom * trend_factor * volume_factor * liquidity_factor + momentum) * horizon_factor
+    est = round(max(0.2, min(cap, raw)), 2)
+
+    breakdown = {
+        "headroom_pct": round(headroom, 2),
+        "trend_factor": trend_factor,
+        "volume_factor": round(volume_factor, 3),
+        "liquidity_factor": round(liquidity_factor, 3),
+        "momentum_pct": round(momentum, 2),
+        "horizon_factor": horizon_factor,
+        "volume_ratio": round(float(ratio), 2) if ratio is not None else None,
+        "vol_idr": vol_idr,
+        "trend": trend,
+        "final_pct": est,
+    }
+    return est, breakdown
+

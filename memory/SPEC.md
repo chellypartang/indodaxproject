@@ -52,6 +52,26 @@ Theme: next-themes, default dark; fonts Outfit/Plus Jakarta Sans/JetBrains Mono;
 - CSV: `/api/evaluation/export/analysis/{kind}` (dashboard snapshot) and `/api/evaluation/export/evaluation/{kind}?days=` (evaluation ledger)
 - PDF: browser print (`window.print()`) with `PrintButton` on Dashboard / Evaluasi / Coin detail. `components/print-report.tsx` renders a paper-only report header; `@media print` in index.css forces the light report palette even in dark mode, hides nav/side rails/TradingView, and sets A4 margins + repeating table headers
 
+## Projection formula (est_gain_pct) — volume & trend are explicit factors
+`lib/indicators.py :: estimate_gain_pct()` returns `(est, breakdown)`:
+
+```
+est = ( headroom x trend_factor x volume_factor x liquidity_factor + momentum ) x horizon
+```
+- **headroom** — % distance from price to resistance (capped 12%), scaled by the technical score
+- **trend_factor** — 1.18 bullish / 1.00 netral / 0.78 bearish, then ×1.08 for a full bullish MA stack
+  (price > SMA20 > SMA50) or ×0.90 for a full bearish stack; clamped to 0.70–1.30
+- **volume_factor** — from `volume_ratio` (recent vs prior average volume): ≥2.0→1.30, ≥1.5→1.20,
+  ≥1.2→1.10, ≥0.8→1.00, ≥0.5→0.88, else 0.75. A breakout on rising volume is worth more than one on fading volume
+- **liquidity_factor** — damps thin markets using 24h IDR turnover: ≥5 M rupiah→1.00 … <10 jt→0.75
+- **momentum** — RSI above 50 (×0.03) + 0.2 when the MACD histogram is positive
+- **horizon** — ×1.6 weekly, ×1.0 daily. Cap is horizon-aware: **30% daily / 60% weekly** — a flat 30%
+  ceiling pinned nearly every weekly candidate at the cap and destroyed the descending ranking
+- The breakdown is persisted on each snapshot item as `projection` (nullable: snapshots locked before
+  this shipped have no breakdown) and surfaced in the UI as "Komposisi Proyeksi" plus the Volume/Tren
+  dashboard columns and the `proj_*` CSV columns
+- `technical.volume_ratio` carries the raw numeric ratio alongside the `volume_trend` label
+
 ## Charts
 - **Globally-listed coins** (candles sourced from OKX/Coinbase): TradingView Advanced Chart — symbol derived from that same venue (`okx` → `OKX:{COIN}USDT`, `coinbase` → `COINBASE:{COIN}USD`), plus the `PriceHistoryChart` IDR line below it for the Indodax-quoted view
 - **Indodax-only coins** (`indodax_trades`/`indodax_ticker` source): no TradingView at all — `IndodaxCandleChart` is the primary chart, a real candlestick series built server-side by `engine.indodax_candles()` from `/api/trades/{pair}` (last 500 trades → true OHLCV buckets, typically 17-20h of history for thin coins) and backfilled for older buckets from our `price_history` samples. A short note card above explains why TradingView is absent and links to a manual TradingView search. Bucket selector: 15m / 1h; window fixed at 24h (the Indodax trade feed does not reach further)

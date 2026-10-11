@@ -5,9 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Activity, Clock, Download, Gauge, RefreshCw, TrendingUp } from "lucide-react";
 import { ApiError, apiGet, apiPost } from "@/lib/api";
-import { fmtIDR, fmtPct, fmtWita, fmtWitaRange, relativeTime } from "@/lib/format";
+import { fmtIDR, fmtPct, fmtWita, fmtWitaRange, relativeTime, compactIDR } from "@/lib/format";
 import { useMe } from "@/hooks/useAuth";
-import { ScoreBar, scoreTone } from "@/components/bits";
+import { ScoreBar, scoreTone, TrendBadge } from "@/components/bits";
 import { StarToggle, useWatchlist } from "@/hooks/useWatchlist";
 import WatchlistPanel from "@/components/watchlist-panel";
 import { PrintButton, PrintReportHeader } from "@/components/print-report";
@@ -38,6 +38,8 @@ function SnapshotTable({ snapshot }: { snapshot: Snapshot }) {
           <TableHead className="text-right">Skor Hybrid</TableHead>
           <TableHead className="text-right">Skor TA</TableHead>
           <TableHead className="text-right">Skor FA</TableHead>
+          <TableHead className="text-right">Volume 24j</TableHead>
+          <TableHead className="text-center">Tren</TableHead>
           <TableHead className="text-right">Estimasi Kenaikan</TableHead>
           <TableHead className="text-right">Target (Rp)</TableHead>
         </TableRow>
@@ -83,6 +85,44 @@ function SnapshotTable({ snapshot }: { snapshot: Snapshot }) {
             </TableCell>
             <TableCell className="text-right font-mono text-sm tabular-nums text-fundamental">
               {item.fundamental_score.toFixed(1)}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex flex-col items-end">
+                <span className="font-mono text-xs tabular-nums">{compactIDR(item.vol_idr)}</span>
+                {item.projection?.volume_ratio != null && (
+                  <span
+                    className={cn(
+                      "font-mono text-[10px] tabular-nums",
+                      item.projection.volume_factor > 1
+                        ? "text-bullish"
+                        : item.projection.volume_factor < 1
+                          ? "text-bearish"
+                          : "text-muted-foreground"
+                    )}
+                  >
+                    {item.projection.volume_ratio.toFixed(2)}× · ×{item.projection.volume_factor.toFixed(2)}
+                  </span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell className="text-center">
+              <div className="flex flex-col items-center gap-0.5">
+                <TrendBadge trend={item.technical.trend} />
+                {item.projection && (
+                  <span
+                    className={cn(
+                      "font-mono text-[10px] tabular-nums",
+                      item.projection.trend_factor > 1
+                        ? "text-bullish"
+                        : item.projection.trend_factor < 1
+                          ? "text-bearish"
+                          : "text-muted-foreground"
+                    )}
+                  >
+                    ×{item.projection.trend_factor.toFixed(2)}
+                  </span>
+                )}
+              </div>
             </TableCell>
             <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-bullish">
               {fmtPct(item.est_gain_pct)}

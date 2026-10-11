@@ -52,6 +52,7 @@ export interface TechnicalDetail {
   resistance: number | null;
   range_position: number | null;
   volume_trend: string;
+  volume_ratio: number | null;
   trend: string;
   change_pct: number | null;
   score: number;
@@ -68,6 +69,19 @@ export interface FundamentalDetail {
   summary: string;
 }
 
+export interface ProjectionBreakdown {
+  headroom_pct: number;
+  trend_factor: number;
+  volume_factor: number;
+  liquidity_factor: number;
+  momentum_pct: number;
+  horizon_factor: number;
+  volume_ratio: number | null;
+  vol_idr: number | null;
+  trend: string;
+  final_pct: number;
+}
+
 export interface SnapshotItem {
   rank: number;
   pair: string;
@@ -80,6 +94,8 @@ export interface SnapshotItem {
   est_gain_pct: number;
   entry_price: number;
   target_price: number;
+  vol_idr: number | null;
+  projection: ProjectionBreakdown | null;
   technical: TechnicalDetail;
   fundamental: FundamentalDetail;
   snapshot_rank?: number | null;

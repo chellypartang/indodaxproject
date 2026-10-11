@@ -13,6 +13,17 @@ export function fmtPct(n: number | null | undefined, digits = 2): string {
   return `${n >= 0 ? "+" : ""}${n.toFixed(digits)}%`;
 }
 
+/** Compact IDR for dense table cells: Rp 12,4 M (miliar) / Rp 950 jt / Rp 12 rb. */
+export function compactIDR(n: number | null | undefined): string {
+  if (n === null || n === undefined || Number.isNaN(n) || n === 0) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1e12) return `Rp ${(n / 1e12).toLocaleString("id-ID", { maximumFractionDigits: 1 })} T`;
+  if (abs >= 1e9) return `Rp ${(n / 1e9).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
+  if (abs >= 1e6) return `Rp ${(n / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 0 })} jt`;
+  if (abs >= 1e3) return `Rp ${(n / 1e3).toLocaleString("id-ID", { maximumFractionDigits: 0 })} rb`;
+  return `Rp ${n.toLocaleString("id-ID", { maximumFractionDigits: 0 })}`;
+}
+
 export function fmtWita(iso: string | null | undefined, withTime = true): string {
   if (!iso) return "—";
   const d = new Date(iso);

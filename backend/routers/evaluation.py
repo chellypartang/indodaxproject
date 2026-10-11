@@ -82,18 +82,25 @@ async def export_analysis(kind: str, _user: dict = Depends(get_current_user)):
         "rank", "pair", "coin", "entry_price_idr", "skor_hybrid", "skor_technical",
         "skor_fundamental", "bobot_technical", "bobot_fundamental", "est_gain_pct",
         "target_price_idr", "rsi", "macd_hist", "support_idr", "resistance_idr",
-        "trend", "volume_trend", "period_start", "generated_at",
+        "trend", "volume_trend", "volume_ratio", "vol_idr_24j",
+        "proj_headroom_pct", "proj_trend_factor", "proj_volume_factor",
+        "proj_liquidity_factor", "proj_momentum_pct", "proj_horizon_factor",
+        "period_start", "generated_at",
     ]
     rows = []
     for it in doc.get("items") or []:
         tech = it.get("technical") or {}
+        proj = it.get("projection") or {}
         rows.append([
             it.get("rank"), it.get("pair"), it.get("name"), it.get("entry_price"),
             it.get("score"), it.get("technical_score"), it.get("fundamental_score"),
             doc["weights"]["technical"], doc["weights"]["fundamental"],
             it.get("est_gain_pct"), it.get("target_price"),
             tech.get("rsi"), tech.get("macd_hist"), tech.get("support"), tech.get("resistance"),
-            tech.get("trend"), tech.get("volume_trend"),
+            tech.get("trend"), tech.get("volume_trend"), tech.get("volume_ratio"),
+            it.get("vol_idr"),
+            proj.get("headroom_pct"), proj.get("trend_factor"), proj.get("volume_factor"),
+            proj.get("liquidity_factor"), proj.get("momentum_pct"), proj.get("horizon_factor"),
             doc["period_start"], doc.get("generated_at"),
         ])
     return _csv_response(f"analisis-{kind}.csv", header, rows)

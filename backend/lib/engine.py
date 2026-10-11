@@ -93,21 +93,23 @@ async def _analyze_candidate(
             if det.get(key) is not None:
                 det[key] = det[key] * ratio
         score = float(det["score"])
-        est = indicators.estimate_gain_pct(det, entry, kind)
+        est, projection = indicators.estimate_gain_pct(det, entry, kind, t.get("vol_idr"))
     else:
-        # ticker-only fallback: range position of the last 24h
+        # ticker-only fallback: range position of the last 24h, still volume/trend aware
         high, low = t["high"], t["low"]
         pos = (entry - low) / (high - low) if high > low else 0.5
         score = round(min(100.0, 35.0 + 30.0 * pos), 1)
-        est = round(max(0.3, min(15.0, ((high - entry) / entry * 50.0 + score / 20.0) if high > entry else 0.3)), 2)
+        fallback_trend = "bullish" if pos >= 0.66 else ("bearish" if pos <= 0.33 else "netral")
         det = {
             "rsi": None, "macd": None, "macd_signal": None, "macd_hist": None,
             "sma20": None, "sma50": None, "support": low, "resistance": high,
-            "range_position": round(pos, 3), "volume_trend": "stabil", "trend": "netral",
+            "range_position": round(pos, 3), "volume_trend": "stabil", "volume_ratio": None,
+            "trend": fallback_trend,
             "change_pct": round((entry / high - 1) * 100, 2) if high else 0.0,
             "score": score, "source": "indodax_ticker",
             "timeframe_note": "Ticker 24 jam Indodax (data candle tidak tersedia untuk koin ini)",
         }
+        est, projection = indicators.estimate_gain_pct(det, entry, kind, t.get("vol_idr"))
 
     fscore = float(fund["score"]) if fund else 50.0
     hybrid = (t_w * score + f_w * fscore) / 100.0
@@ -133,6 +135,8 @@ async def _analyze_candidate(
         "est_gain_pct": est,
         "entry_price": entry,
         "target_price": round(entry * (1 + est / 100.0), 8),
+        "vol_idr": t.get("vol_idr"),
+        "projection": projection,
         "technical": det,
         "fundamental": fund_out,
     }

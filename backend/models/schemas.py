@@ -107,6 +107,7 @@ class TechnicalDetail(BaseModel):
     resistance: float | None = None
     range_position: float | None = None
     volume_trend: str = "stabil"
+    volume_ratio: float | None = None
     trend: str = "netral"
     change_pct: float | None = None
     score: float = 0.0
@@ -125,6 +126,21 @@ class FundamentalDetail(BaseModel):
     summary: str = ""
 
 
+class ProjectionBreakdown(BaseModel):
+    """How est_gain_pct was built — volume and trend are explicit, auditable factors."""
+
+    headroom_pct: float = 0.0
+    trend_factor: float = 1.0
+    volume_factor: float = 1.0
+    liquidity_factor: float = 1.0
+    momentum_pct: float = 0.0
+    horizon_factor: float = 1.0
+    volume_ratio: float | None = None
+    vol_idr: float | None = None
+    trend: str = "netral"
+    final_pct: float = 0.0
+
+
 class SnapshotItem(BaseModel):
     rank: int = 0
     pair: str
@@ -137,6 +153,9 @@ class SnapshotItem(BaseModel):
     est_gain_pct: float
     entry_price: float
     target_price: float
+    vol_idr: float | None = None
+    # absent on snapshots locked before the volume/trend-aware projection shipped
+    projection: ProjectionBreakdown | None = None
     technical: TechnicalDetail
     fundamental: FundamentalDetail
     # live coin-detail extras (absent inside locked snapshots)

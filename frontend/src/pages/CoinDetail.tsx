@@ -156,6 +156,38 @@ function RsiGauge({ rsi }: { rsi: number | null }) {
   );
 }
 
+// Multipliers read best as "how much this factor helped or hurt the projection".
+function FactorRow({
+  label,
+  hint,
+  value,
+  testId,
+}: {
+  label: string;
+  hint?: string;
+  value: number;
+  testId: string;
+}) {
+  const tone = value > 1.001 ? "text-bullish" : value < 0.999 ? "text-bearish" : "text-muted-foreground";
+  const pct = (value - 1) * 100;
+  return (
+    <div className="flex items-start justify-between gap-2">
+      <div className="min-w-0">
+        <p className="text-muted-foreground">{label}</p>
+        {hint && <p className="truncate text-[11px] text-muted-foreground/70">{hint}</p>}
+      </div>
+      <div className="shrink-0 text-right">
+        <span className={cn("font-mono text-sm font-semibold tabular-nums", tone)} data-testid={testId}>
+          ×{value.toFixed(2)}
+        </span>
+        <p className={cn("text-[11px]", tone)}>
+          {pct === 0 ? "netral" : `${pct > 0 ? "+" : ""}${pct.toFixed(0)}%`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function CoinDetail() {
   const { pair = "" } = useParams();
   const [params, setParams] = useSearchParams();
@@ -451,6 +483,80 @@ export default function CoinDetail() {
                       <p className="text-xs text-muted-foreground">Tidak ada headline yang cocok.</p>
                     )}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card size="sm" data-testid="projection-breakdown-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-heading text-base">
+                    <Target className="size-4 text-bullish" />
+                    Komposisi Proyeksi ({kind === "daily" ? "Harian" : "Mingguan"})
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Volume perdagangan dan tren ikut diperhitungkan sebagai pengali eksplisit.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-2.5 text-sm">
+                  {coin.projection ? (
+                    <>
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-muted-foreground">Ruang ke resistance</span>
+                        <span className="font-mono tabular-nums" data-testid="proj-headroom">
+                          {fmtPct(coin.projection.headroom_pct)}
+                        </span>
+                      </div>
+                      <FactorRow
+                        label="Pengali tren"
+                        hint={coin.projection.trend}
+                        value={coin.projection.trend_factor}
+                        testId="proj-trend-factor"
+                      />
+                      <FactorRow
+                        label="Pengali volume"
+                        hint={
+                          coin.projection.volume_ratio !== null
+                            ? `rasio ${coin.projection.volume_ratio.toFixed(2)}× vs periode sebelumnya`
+                            : "rasio volume tidak tersedia"
+                        }
+                        value={coin.projection.volume_factor}
+                        testId="proj-volume-factor"
+                      />
+                      <FactorRow
+                        label="Pengali likuiditas"
+                        hint={`turnover 24j ${fmtIDR(coin.projection.vol_idr)}`}
+                        value={coin.projection.liquidity_factor}
+                        testId="proj-liquidity-factor"
+                      />
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-muted-foreground">Bonus momentum</span>
+                        <span className="font-mono tabular-nums">{fmtPct(coin.projection.momentum_pct)}</span>
+                      </div>
+                      {coin.projection.horizon_factor !== 1 && (
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-muted-foreground">Pengali horizon mingguan</span>
+                          <span className="font-mono tabular-nums">
+                            ×{coin.projection.horizon_factor.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        className="rounded-md border border-border bg-card p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground"
+                        data-testid="proj-formula"
+                      >
+                        ({fmtPct(coin.projection.headroom_pct)} × {coin.projection.trend_factor.toFixed(2)}
+                        <span className="text-bullish"> tren</span> × {coin.projection.volume_factor.toFixed(2)}
+                        <span className="text-technical"> volume</span> ×{" "}
+                        {coin.projection.liquidity_factor.toFixed(2)} likuiditas +{" "}
+                        {coin.projection.momentum_pct.toFixed(2)}) × {coin.projection.horizon_factor.toFixed(2)} ={" "}
+                        <span className="font-semibold text-foreground">{fmtPct(coin.projection.final_pct)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Rincian proyeksi belum tersedia untuk snapshot ini (dibuat sebelum faktor
+                      volume & tren eksplisit aktif). Akan muncul pada snapshot berikutnya.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
