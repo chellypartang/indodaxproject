@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -177,14 +178,16 @@ export default function AppShell() {
                 }
               />
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="truncate text-sm">{me?.email}</span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {me?.role === "admin" ? "Administrator" : "Anggota tim"}
-                    </span>
-                  </div>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="truncate text-sm">{me?.email}</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {me?.role === "admin" ? "Administrator" : "Anggota tim"}
+                      </span>
+                    </div>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem data-testid="logout-menu-item" onClick={() => void endSession()}>
                   <LogOut className="size-4" />

@@ -42,6 +42,10 @@ React 19 + TanStack Query + react-router. Pages: `/login`, `/` (dashboard, tabs 
 (TradingView Advanced Chart widget + breakdowns + star toggle), `/evaluasi` (tabs Harian/Mingguan/Bulanan/**Per Koin** + recharts trends),
 `/admin/pengguna`, `/admin/pengaturan` (weight sliders + regenerate). Guards: RequireAuth/RequireAdmin via `useMe()`.
 Watchlist state lives in `hooks/useWatchlist.tsx` (`useWatchlist`, `useToggleWatchlist`, `StarToggle`); the panel is `components/watchlist-panel.tsx` — its cards are `div role="button"`, never `<button>`, because the star toggle nests inside them.
+
+### base-ui gotchas hit in this app (keep these)
+- `DropdownMenuLabel` is base-ui `Menu.GroupLabel` and **throws at runtime** ("MenuGroupContext is missing") unless wrapped in `DropdownMenuGroup`. The header account menu in `components/app-shell.tsx` wraps it — do not unwrap.
+- Nested interactive controls: a clickable card containing its own button must be `div role="button"` + `onKeyDown`, not `<button>`.
 Theme: next-themes, default dark; fonts Outfit/Plus Jakarta Sans/JetBrains Mono; palette in `src/index.css`.
 
 ## Export & reporting

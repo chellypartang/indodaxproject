@@ -1,0 +1,83 @@
+{
+  "iteration": 1,
+  "passed": 10,
+  "failed": 0,
+  "flaky": 0,
+  "blocked": 0,
+  "test_error": 0,
+  "retest_needed": false,
+  "bugs": [],
+  "action_items": [],
+  "checks": [
+    {
+      "criterion": "Login gate and dashboard render (regression)",
+      "name": "test_admin_login_and_dashboard_snapshot_has_10_items / test_login_rejects_bad_password",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/auth/login -> 200 {email, role:admin}; GET /api/auth/me -> 200; GET /api/analysis/current?period=daily -> 200 with snapshot.items length=10, ranks sorted. Bad password -> 400/401."
+    },
+    {
+      "criterion": "Login gate and dashboard render (regression)",
+      "name": "login-gate-and-dashboard-render",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Logged-out visit to / redirected to /login. Login with admin creds reached dashboard; table rows count = 10; first row contains '#1', 'Rp', '%'."
+    },
+    {
+      "criterion": "Admin pages reachable for the admin account (regression)",
+      "name": "test_admin_users_list_contains_seeded_admin / test_settings_weights_defaults / test_users_endpoint_requires_auth",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/users (authed) -> 200, contains chellypartang@gmail.com role=admin. GET /api/settings/weights -> 200 {daily:{70,30}, weekly:{50,50}}. GET /api/users (unauthed) -> 401/403."
+    },
+    {
+      "criterion": "Admin pages reachable for the admin account (regression)",
+      "name": "admin-pages-reachable",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/admin/pengguna shows users-table with row for chellypartang@gmail.com containing 'admin'. /admin/pengaturan shows weights-card-daily (70/30) and weights-card-weekly (50/50)."
+    },
+    {
+      "criterion": "REPORTED BUG: account/user menu must not trigger MenuGroupContext runtime error",
+      "name": "account-menu-no-runtime-error",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "After login, clicking user-menu-button opened dropdown showing email + 'Administrator' + 'Keluar' item (logout-menu-item). No vite error overlay found; console errors captured contained only an expected 401 on /api/auth/me probe, no 'MenuGroupContext' or 'Menu group parts' text. Also re-verified against public preview URL https://indo-crypto-lens.preview.emergentagent.com (passed after one retry due to a transient nav timeout, then restored check to localhost)."
+    },
+    {
+      "criterion": "Logout from that dropdown works end to end",
+      "name": "account-menu-logout-redirects-login",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Clicked user-menu-button then logout-menu-item; URL navigated to /login. Subsequent page.goto('/') redirected back to /login (dashboard gated)."
+    },
+    {
+      "criterion": "Dashboard tabs and theme toggle still work (regression around the header)",
+      "name": "dashboard-tabs-and-theme-toggle",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Switched Harian<->Mingguan tabs, table rows remained visible each time. Clicked theme-toggle-button; html class attribute changed from initial value and toggled back without errors."
+    },
+    {
+      "criterion": "Coin watchlist star toggle round-trips (regression)",
+      "name": "watchlist-star-toggle-roundtrip",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Starred Top-10 row #4 (not the seeded kaia_idr); watchlist-count badge went from initial N to N+1, then back to N after un-starring. No nested-button HTML console errors found."
+    },
+    {
+      "criterion": "Coin detail page renders its analysis breakdown (regression)",
+      "name": "coin-detail-page-renders-analysis",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Clicked Top-10 row #1, navigated to /coin/<pair>. Verified coin-hybrid-score, coin-est-gain, technical-matrix (rsi-gauge, macd-card, sr-card) and fundamental-panel with fundamental-score/fundamental-summary and 'Opini & Sentimen Berita' text all visible."
+    },
+    {
+      "criterion": "Evaluation page tabs all render (regression)",
+      "name": "evaluation-page-tabs-render",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Navigated to /evaluasi. eval-tab-daily -> eval-table-daily visible (has real data). eval-tab-weekly -> evaluation-empty-state or table (legitimately may be empty per spec). eval-tab-monthly -> monthly-ledger-table or empty-state. eval-tab-by-coin -> by-coin-table visible with reliability rows."
+    }
+  ]
+}
