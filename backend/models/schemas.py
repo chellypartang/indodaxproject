@@ -141,6 +141,27 @@ class ProjectionBreakdown(BaseModel):
     final_pct: float = 0.0
 
 
+class TradeLevels(BaseModel):
+    """Actionable trade plan derived from support/resistance + the projection."""
+
+    entry: float
+    entry_low: float
+    entry_high: float
+    tp1: float
+    tp2: float
+    tp3: float
+    tp1_pct: float
+    tp2_pct: float
+    tp3_pct: float
+    stop_loss: float
+    stop_loss_pct: float
+    risk_reward: float | None = None
+    max_risk_pct: float = 8.0
+    support: float | None = None
+    resistance: float | None = None
+    key_resistance: float | None = None
+
+
 class SnapshotItem(BaseModel):
     rank: int = 0
     pair: str
@@ -156,6 +177,7 @@ class SnapshotItem(BaseModel):
     vol_idr: float | None = None
     # absent on snapshots locked before the volume/trend-aware projection shipped
     projection: ProjectionBreakdown | None = None
+    levels: TradeLevels | None = None
     technical: TechnicalDetail
     fundamental: FundamentalDetail
     # live coin-detail extras (absent inside locked snapshots)

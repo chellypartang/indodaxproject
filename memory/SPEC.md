@@ -72,6 +72,20 @@ est = ( headroom x trend_factor x volume_factor x liquidity_factor + momentum ) 
   dashboard columns and the `proj_*` CSV columns
 - `technical.volume_ratio` carries the raw numeric ratio alongside the `volume_trend` label
 
+## Trade levels (entry / TP1-2-3 / stop loss)
+`lib/indicators.py :: trade_levels()` → persisted per snapshot item as `levels` (nullable for
+snapshots locked before this shipped), shown as the "Rencana Trading" card on the coin page, as the
+`Entry / TP 1·2·3` + `Stop Loss` dashboard columns, and as CSV columns (`tp1_idr`…`risk_reward`):
+- **TP ladder** proportional to the projection so it is always monotonic: TP1 = 0.5×est, **TP2 = est
+  (identical to `target_price`)**, TP3 = 1.75×est. A real resistance falling inside the ladder is
+  reported as `key_resistance`
+- **Entry zone**: `entry × 0.985 … × 1.005`, floored at support when support sits below price
+- **Stop loss**: anchored at `support × 0.985` when support is below price, clamped to the period risk
+  cap (8% daily / 14% weekly) and to a 1.5% minimum. When **no valid support exists below price** the
+  stop falls back to *half* the cap (4% / 7%), not the full cap — least information must not buy the
+  most risk
+- **risk_reward** = (TP2 − entry) / (entry − SL). A thin projection honestly yields a poor R/R
+
 ## Charts
 - **Globally-listed coins** (candles sourced from OKX/Coinbase): TradingView Advanced Chart — symbol derived from that same venue (`okx` → `OKX:{COIN}USDT`, `coinbase` → `COINBASE:{COIN}USD`), plus the `PriceHistoryChart` IDR line below it for the Indodax-quoted view
 - **Indodax-only coins** (`indodax_trades`/`indodax_ticker` source): no TradingView at all — `IndodaxCandleChart` is the primary chart, a real candlestick series built server-side by `engine.indodax_candles()` from `/api/trades/{pair}` (last 500 trades → true OHLCV buckets, typically 17-20h of history for thin coins) and backfilled for older buckets from our `price_history` samples. A short note card above explains why TradingView is absent and links to a manual TradingView search. Bucket selector: 15m / 1h; window fixed at 24h (the Indodax trade feed does not reach further)

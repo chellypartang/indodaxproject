@@ -41,7 +41,8 @@ function SnapshotTable({ snapshot }: { snapshot: Snapshot }) {
           <TableHead className="text-right">Volume 24j</TableHead>
           <TableHead className="text-center">Tren</TableHead>
           <TableHead className="text-right">Estimasi Kenaikan</TableHead>
-          <TableHead className="text-right">Target (Rp)</TableHead>
+          <TableHead className="text-right">Entry / TP 1·2·3</TableHead>
+          <TableHead className="text-right">Stop Loss</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -127,7 +128,35 @@ function SnapshotTable({ snapshot }: { snapshot: Snapshot }) {
             <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-bullish">
               {fmtPct(item.est_gain_pct)}
             </TableCell>
-            <TableCell className="text-right font-mono text-sm tabular-nums">{fmtIDR(item.target_price)}</TableCell>
+            <TableCell className="text-right">
+              {item.levels ? (
+                <div className="flex flex-col items-end leading-tight">
+                  <span className="font-mono text-xs tabular-nums" data-testid={`row-entry-${item.pair.replace("_", "-")}`}>
+                    {fmtIDR(item.levels.entry)}
+                  </span>
+                  <span className="font-mono text-[10px] tabular-nums text-bullish" data-testid={`row-tps-${item.pair.replace("_", "-")}`}>
+                    {fmtIDR(item.levels.tp1)} · {fmtIDR(item.levels.tp2)} · {fmtIDR(item.levels.tp3)}
+                  </span>
+                </div>
+              ) : (
+                <span className="font-mono text-sm tabular-nums">{fmtIDR(item.target_price)}</span>
+              )}
+            </TableCell>
+            <TableCell className="text-right">
+              {item.levels ? (
+                <div className="flex flex-col items-end leading-tight">
+                  <span className="font-mono text-xs tabular-nums text-bearish" data-testid={`row-sl-${item.pair.replace("_", "-")}`}>
+                    {fmtIDR(item.levels.stop_loss)}
+                  </span>
+                  <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                    {fmtPct(item.levels.stop_loss_pct)}
+                    {item.levels.risk_reward !== null && ` · R/R 1:${item.levels.risk_reward.toFixed(1)}`}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

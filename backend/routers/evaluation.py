@@ -83,6 +83,8 @@ async def export_analysis(kind: str, _user: dict = Depends(get_current_user)):
         "skor_fundamental", "bobot_technical", "bobot_fundamental", "est_gain_pct",
         "target_price_idr", "rsi", "macd_hist", "support_idr", "resistance_idr",
         "trend", "volume_trend", "volume_ratio", "vol_idr_24j",
+        "entry_low_idr", "entry_high_idr", "tp1_idr", "tp2_idr", "tp3_idr",
+        "tp1_pct", "tp2_pct", "tp3_pct", "stop_loss_idr", "stop_loss_pct", "risk_reward",
         "proj_headroom_pct", "proj_trend_factor", "proj_volume_factor",
         "proj_liquidity_factor", "proj_momentum_pct", "proj_horizon_factor",
         "period_start", "generated_at",
@@ -91,6 +93,7 @@ async def export_analysis(kind: str, _user: dict = Depends(get_current_user)):
     for it in doc.get("items") or []:
         tech = it.get("technical") or {}
         proj = it.get("projection") or {}
+        lv = it.get("levels") or {}
         rows.append([
             it.get("rank"), it.get("pair"), it.get("name"), it.get("entry_price"),
             it.get("score"), it.get("technical_score"), it.get("fundamental_score"),
@@ -99,6 +102,10 @@ async def export_analysis(kind: str, _user: dict = Depends(get_current_user)):
             tech.get("rsi"), tech.get("macd_hist"), tech.get("support"), tech.get("resistance"),
             tech.get("trend"), tech.get("volume_trend"), tech.get("volume_ratio"),
             it.get("vol_idr"),
+            lv.get("entry_low"), lv.get("entry_high"),
+            lv.get("tp1"), lv.get("tp2"), lv.get("tp3"),
+            lv.get("tp1_pct"), lv.get("tp2_pct"), lv.get("tp3_pct"),
+            lv.get("stop_loss"), lv.get("stop_loss_pct"), lv.get("risk_reward"),
             proj.get("headroom_pct"), proj.get("trend_factor"), proj.get("volume_factor"),
             proj.get("liquidity_factor"), proj.get("momentum_pct"), proj.get("horizon_factor"),
             doc["period_start"], doc.get("generated_at"),

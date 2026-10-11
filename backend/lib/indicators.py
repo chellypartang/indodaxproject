@@ -160,6 +160,70 @@ def technical_detail(candles: list[dict], timeframe: str = "daily", source: str 
     }
 
 
+def trade_levels(detail: dict, entry: float, est_gain_pct: float, kind: str) -> dict:
+    """Actionable trade plan: entry zone, a TP1/TP2/TP3 ladder, stop loss and risk/reward.
+
+    - TP ladder is proportional to the model's projection, so TP2 always equals the
+      projected target and the ladder stays monotonic (TP1 < TP2 < TP3).
+      Where a real resistance level sits inside the ladder it is reported as the key level.
+    - Stop loss is anchored just under support, but clamped so risk never exceeds
+      max_risk (8% daily / 14% weekly) nor falls under 1.5%.
+    """
+    support = detail.get("support")
+    resistance = detail.get("resistance")
+
+    # --- take-profit ladder
+    tp1_pct = round(est_gain_pct * 0.5, 2)
+    tp2_pct = round(est_gain_pct, 2)
+    tp3_pct = round(est_gain_pct * 1.75, 2)
+
+    # --- entry zone: a small band around price, never below support
+    entry_low = entry * 0.985
+    if support and support < entry:
+        entry_low = max(entry_low, support)
+    entry_high = entry * 1.005
+
+    # --- stop loss
+    max_risk = 14.0 if kind == "weekly" else 8.0
+    min_risk = 1.5
+    if support and support < entry:
+        # anchor just under the support that actually held
+        sl = max(support * 0.985, entry * (1 - max_risk / 100.0))
+    else:
+        # no support below price: fall back to a moderate stop, not the widest allowed —
+        # the least information should not buy the most risk
+        sl = entry * (1 - (max_risk / 2.0) / 100.0)
+    sl = min(sl, entry * (1 - min_risk / 100.0))   # always keep a real stop
+    sl_pct = (sl / entry - 1) * 100.0
+
+    risk = entry - sl
+    reward = entry * tp2_pct / 100.0
+    risk_reward = round(reward / risk, 2) if risk > 0 else None
+
+    key_level = None
+    if resistance and entry * (1 + tp1_pct / 100.0) <= resistance <= entry * (1 + tp3_pct / 100.0):
+        key_level = round(resistance, 8)
+
+    return {
+        "entry": round(entry, 8),
+        "entry_low": round(entry_low, 8),
+        "entry_high": round(entry_high, 8),
+        "tp1": round(entry * (1 + tp1_pct / 100.0), 8),
+        "tp2": round(entry * (1 + tp2_pct / 100.0), 8),
+        "tp3": round(entry * (1 + tp3_pct / 100.0), 8),
+        "tp1_pct": tp1_pct,
+        "tp2_pct": tp2_pct,
+        "tp3_pct": tp3_pct,
+        "stop_loss": round(sl, 8),
+        "stop_loss_pct": round(sl_pct, 2),
+        "risk_reward": risk_reward,
+        "max_risk_pct": max_risk,
+        "support": round(support, 8) if support else None,
+        "resistance": round(resistance, 8) if resistance else None,
+        "key_resistance": key_level,
+    }
+
+
 def estimate_gain_pct(
     detail: dict,
     entry_idr: float,

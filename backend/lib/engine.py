@@ -112,6 +112,7 @@ async def _analyze_candidate(
         est, projection = indicators.estimate_gain_pct(det, entry, kind, t.get("vol_idr"))
 
     fscore = float(fund["score"]) if fund else 50.0
+    levels = indicators.trade_levels(det, entry, est, kind)
     hybrid = (t_w * score + f_w * fscore) / 100.0
     headlines = (fund or {}).get("headlines") or []
     fund_out = {
@@ -137,6 +138,7 @@ async def _analyze_candidate(
         "target_price": round(entry * (1 + est / 100.0), 8),
         "vol_idr": t.get("vol_idr"),
         "projection": projection,
+        "levels": levels,
         "technical": det,
         "fundamental": fund_out,
     }

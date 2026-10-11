@@ -82,6 +82,25 @@ export interface ProjectionBreakdown {
   final_pct: number;
 }
 
+export interface TradeLevels {
+  entry: number;
+  entry_low: number;
+  entry_high: number;
+  tp1: number;
+  tp2: number;
+  tp3: number;
+  tp1_pct: number;
+  tp2_pct: number;
+  tp3_pct: number;
+  stop_loss: number;
+  stop_loss_pct: number;
+  risk_reward: number | null;
+  max_risk_pct: number;
+  support: number | null;
+  resistance: number | null;
+  key_resistance: number | null;
+}
+
 export interface SnapshotItem {
   rank: number;
   pair: string;
@@ -96,6 +115,7 @@ export interface SnapshotItem {
   target_price: number;
   vol_idr: number | null;
   projection: ProjectionBreakdown | null;
+  levels: TradeLevels | null;
   technical: TechnicalDetail;
   fundamental: FundamentalDetail;
   snapshot_rank?: number | null;

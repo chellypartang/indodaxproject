@@ -18,6 +18,7 @@ import { fmtIDR, fmtPct, fmtWita, relativeTime } from "@/lib/format";
 import { SentimentChip, ScoreBar, TrendBadge, VolumeTrendBadge, scoreTone } from "@/components/bits";
 import PriceHistoryChart from "@/components/price-history-chart";
 import IndodaxCandleChart from "@/components/indodax-candle-chart";
+import TradePlanCard from "@/components/trade-plan-card";
 import { StarToggle, useWatchlist } from "@/hooks/useWatchlist";
 import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import type { SnapshotItem } from "@/types";
@@ -485,6 +486,8 @@ export default function CoinDetail() {
                   </div>
                 </CardContent>
               </Card>
+
+              <TradePlanCard levels={coin.levels} kind={kind} />
 
               <Card size="sm" data-testid="projection-breakdown-card">
                 <CardHeader>
