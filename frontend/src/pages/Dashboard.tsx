@@ -8,6 +8,8 @@ import { ApiError, apiGet, apiPost } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita, fmtWitaRange, relativeTime } from "@/lib/format";
 import { useMe } from "@/hooks/useAuth";
 import { ScoreBar, scoreTone } from "@/components/bits";
+import { StarToggle, useWatchlist } from "@/hooks/useWatchlist";
+import WatchlistPanel from "@/components/watchlist-panel";
 import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import { Countdown } from "@/components/app-shell";
 import type { CurrentAnalysis, MetaStatusOut, Snapshot, SnapshotItem } from "@/types";
@@ -23,10 +25,13 @@ type Kind = "daily" | "weekly";
 
 function SnapshotTable({ snapshot }: { snapshot: Snapshot }) {
   const navigate = useNavigate();
+  const { data: watchlist } = useWatchlist();
+  const starred = new Set((watchlist ?? []).map((w) => w.pair));
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-8 print:hidden"></TableHead>
           <TableHead className="w-12">Rank</TableHead>
           <TableHead>Koin</TableHead>
           <TableHead className="text-right">Harga (Rp)</TableHead>
@@ -45,6 +50,9 @@ function SnapshotTable({ snapshot }: { snapshot: Snapshot }) {
             className="cursor-pointer transition-colors duration-150 hover:bg-accent/60"
             onClick={() => navigate(`/coin/${item.pair}`)}
           >
+            <TableCell className="print:hidden">
+              <StarToggle pair={item.pair} name={item.name} starred={starred.has(item.pair)} />
+            </TableCell>
             <TableCell className="font-mono font-semibold">#{item.rank}</TableCell>
             <TableCell>
               <div className="flex items-center gap-2.5">
@@ -221,6 +229,9 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* starred coins, pinned above the Top 10 */}
+      <WatchlistPanel />
 
       <div className="grid gap-6 lg:grid-cols-12">
         {/* snapshot panel */}

@@ -249,6 +249,56 @@ class MonthlyEvalResponse(BaseModel):
     overall: MonthlyOverall
 
 
+# ---------- watchlist ----------
+
+
+class WatchlistAddIn(BaseModel):
+    pair: str
+
+
+class WatchlistEntry(BaseModel):
+    pair: str
+    coin: str
+    name: str
+    logo: str = ""
+    created_at: datetime | None = None
+    # live enrichment (ticker + current locked snapshot), null when unavailable
+    last_price: float | None = None
+    high_24h: float | None = None
+    low_24h: float | None = None
+    vol_idr: float | None = None
+    snapshot_rank: int | None = None
+    score: float | None = None
+    est_gain_pct: float | None = None
+    in_snapshot: bool = False
+
+
+# ---------- per-coin accuracy ----------
+
+
+class CoinAccuracyRow(BaseModel):
+    pair: str
+    coin: str
+    name: str
+    logo: str = ""
+    appearances: int
+    hits: int
+    hit_rate: float
+    avg_projected: float
+    avg_actual: float
+    avg_deviation: float
+    best_actual: float
+    worst_actual: float
+    last_seen: datetime | None = None
+
+
+class CoinAccuracyResponse(BaseModel):
+    kind: str
+    rows: list[CoinAccuracyRow] = []
+    snapshots_evaluated: int = 0
+    min_appearances: int = 1
+
+
 # ---------- meta ----------
 
 

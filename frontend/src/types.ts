@@ -177,6 +177,45 @@ export interface MonthlyEvalResponse {
   overall: MonthlyOverall;
 }
 
+export interface WatchlistEntry {
+  pair: string;
+  coin: string;
+  name: string;
+  logo: string;
+  created_at: string | null;
+  last_price: number | null;
+  high_24h: number | null;
+  low_24h: number | null;
+  vol_idr: number | null;
+  snapshot_rank: number | null;
+  score: number | null;
+  est_gain_pct: number | null;
+  in_snapshot: boolean;
+}
+
+export interface CoinAccuracyRow {
+  pair: string;
+  coin: string;
+  name: string;
+  logo: string;
+  appearances: number;
+  hits: number;
+  hit_rate: number;
+  avg_projected: number;
+  avg_actual: number;
+  avg_deviation: number;
+  best_actual: number;
+  worst_actual: number;
+  last_seen: string | null;
+}
+
+export interface CoinAccuracyResponse {
+  kind: string;
+  rows: CoinAccuracyRow[];
+  snapshots_evaluated: number;
+  min_appearances: number;
+}
+
 export interface PricePoint {
   ts: string;
   price: number;

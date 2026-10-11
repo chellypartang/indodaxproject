@@ -17,6 +17,7 @@ dark/light mode. UI copy is Indonesian-first; WITA = Asia/Makassar (UTC+8).
   fundamental{score, polarity, positives, negatives, headlines[], summary}},
   actuals{}, actuals_running{}, actuals_recorded, approximated, evaluated_at} — **the snapshot lock**: reads serve stored docs
 - `settings` — {key: weights_daily|weights_weekly, technical, fundamental, updated_at}
+- `watchlist` — {user_id, pair, coin, name, logo, created_at} — unique per (user_id, pair), max 25 per user; enriched on read with live ticker + current daily snapshot rank/score
 - `price_history` — {ts, prices{ticker_id: last}} sampled every 15 min, TTL 45 days
 - `sync_status` — singleton (_id: "sync") {last_ticker_sync_at, last_ticker_ok, last_ticker_error, last_generation_at, last_generation_error, universe_count, candidates_last_run}
 - `status_checks` — template demo routes, unused by the app
@@ -31,14 +32,16 @@ dark/light mode. UI copy is Indonesian-first; WITA = Asia/Makassar (UTC+8).
 - `/auth/login|logout|me` — httpOnly JWT cookie session (SESSION_SECRET in .env)
 - `/users` GET, POST (invite → returns initial_password once), `/{id}/password` PATCH (reset), `/{id}` DELETE — admin only
 - `/analysis/current?kind=` , `/analysis/history?kind=&limit=`, `/analysis/snapshot/{id}`, `/analysis/coin/{pair}?kind=` (live, 2-min cache), `/analysis/coin/{pair}/history?hours=` (Indodax price samples for the coin trend chart, max 168h), `/analysis/refresh` POST (admin, force regenerate)
-- `/evaluation/daily|weekly|monthly`, `/evaluation/export/analysis/{kind}`, `/evaluation/export/evaluation/{kind}?days=30` (CSV)
+- `/evaluation/daily|weekly|monthly`, `/evaluation/by-coin?kind=&min_appearances=` (per-coin model reliability, sorted by hit rate → sample size → |deviation|), `/evaluation/export/analysis/{kind}`, `/evaluation/export/evaluation/{kind}?days=30` (CSV)
+- `/watchlist` GET (enriched list), POST {pair} (idempotent upsert, 404 on unknown pair, 400 past 25), `/watchlist/{pair}` DELETE — per-user, any role
 - `/settings/weights` GET, `/settings/weights/{kind}` PUT (admin, must sum 100)
 - `/meta/status` — server-anchored next runs + sync health
 
 ## Frontend
-React 19 + TanStack Query + react-router. Pages: `/login`, `/` (dashboard, tabs Harian/Mingguan), `/coin/:pair`
-(TradingView Advanced Chart widget + breakdowns), `/evaluasi` (Harian/Mingguan/Bulanan + recharts trends),
+React 19 + TanStack Query + react-router. Pages: `/login`, `/` (dashboard, tabs Harian/Mingguan, watchlist panel pinned above the Top 10), `/coin/:pair`
+(TradingView Advanced Chart widget + breakdowns + star toggle), `/evaluasi` (tabs Harian/Mingguan/Bulanan/**Per Koin** + recharts trends),
 `/admin/pengguna`, `/admin/pengaturan` (weight sliders + regenerate). Guards: RequireAuth/RequireAdmin via `useMe()`.
+Watchlist state lives in `hooks/useWatchlist.tsx` (`useWatchlist`, `useToggleWatchlist`, `StarToggle`); the panel is `components/watchlist-panel.tsx` — its cards are `div role="button"`, never `<button>`, because the star toggle nests inside them.
 Theme: next-themes, default dark; fonts Outfit/Plus Jakarta Sans/JetBrains Mono; palette in `src/index.css`.
 
 ## Export & reporting

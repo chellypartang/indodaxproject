@@ -1,6 +1,7 @@
 // Evaluasi Kinerja — proyeksi vs Actual High: harian, mingguan, dan rekap bulanan.
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   Bar,
   BarChart,
@@ -15,7 +16,7 @@ import {
 import { CalendarClock, CheckCircle2, Download, Scale, Target, TrendingUp } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita } from "@/lib/format";
-import type { EvalResponse, MonthlyEvalResponse } from "@/types";
+import type { CoinAccuracyResponse, EvalResponse, MonthlyEvalResponse } from "@/types";
 import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
@@ -354,6 +355,177 @@ function MonthlyTab() {
   );
 }
 
+function ByCoinTab() {
+  const [kind, setKind] = useState<"daily" | "weekly">("daily");
+  const navigate = useNavigate();
+  const { data, isLoading } = useQuery({
+    queryKey: ["evaluation", "by-coin", kind],
+    queryFn: () => apiGet<CoinAccuracyResponse>(`/evaluation/by-coin?kind=${kind}`),
+    refetchInterval: 180_000,
+  });
+
+  const rows = data?.rows ?? [];
+  const best = rows[0];
+  const worst = rows.length > 1 ? rows[rows.length - 1] : null;
+  const multi = rows.filter((r) => r.appearances > 1).length;
+
+  if (isLoading) return <div className="py-16 text-center text-sm text-muted-foreground">Memuat akurasi per koin…</div>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Peringkat keandalan model per koin dari{" "}
+          <span className="font-mono">{data?.snapshots_evaluated ?? 0}</span> snapshot{" "}
+          {kind === "daily" ? "harian" : "mingguan"} yang sudah dievaluasi.
+        </p>
+        <Tabs value={kind} onValueChange={(v) => setKind(v as "daily" | "weekly")}>
+          <TabsList>
+            <TabsTrigger value="daily" data-testid="by-coin-kind-daily">Harian</TabsTrigger>
+            <TabsTrigger value="weekly" data-testid="by-coin-kind-weekly">Mingguan</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {rows.length === 0 ? (
+        <EmptyEval kindLabel="per koin" />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <StatCard
+              label="Koin Dievaluasi"
+              value={String(rows.length)}
+              icon={<Target className="size-3" />}
+              testId="by-coin-total"
+            />
+            <StatCard
+              label="Paling Andal"
+              value={best ? `${best.name} · ${best.hit_rate.toFixed(0)}%` : "—"}
+              tone="text-bullish"
+              icon={<TrendingUp className="size-3" />}
+              testId="by-coin-best"
+            />
+            <StatCard
+              label="Paling Sering Meleset"
+              value={worst ? `${worst.name} · ${worst.hit_rate.toFixed(0)}%` : "—"}
+              tone="text-bearish"
+              icon={<Scale className="size-3" />}
+              testId="by-coin-worst"
+            />
+            <StatCard
+              label="Koin Berulang"
+              value={`${multi} koin`}
+              icon={<CheckCircle2 className="size-3" />}
+              testId="by-coin-repeat"
+            />
+          </div>
+
+          {rows.length > 1 && (
+            <Card data-testid="by-coin-chart">
+              <CardHeader>
+                <CardTitle className="font-heading">Akurasi Target per Koin</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Diurutkan dari koin yang paling sering mencapai target proyeksinya.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={rows.slice(0, 14)} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
+                      <CartesianGrid stroke={CHART.grid} strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" stroke={CHART.axis} fontSize={11} interval={0} angle={-35} textAnchor="end" height={58} />
+                      <YAxis stroke={CHART.axis} fontSize={11} unit="%" />
+                      <Tooltip
+                        contentStyle={{ background: "var(--color-card)", border: `1px solid ${CHART.grid}`, borderRadius: 8 }}
+                        labelStyle={{ color: "var(--color-foreground)" }}
+                      />
+                      <Bar dataKey="hit_rate" name="Akurasi Target %" fill={CHART.hit} radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="avg_actual" name="Rata-rata Aktual %" fill={CHART.proj} radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading">Papan Keandalan Koin</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table data-testid="by-coin-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Koin</TableHead>
+                    <TableHead className="text-right">Muncul</TableHead>
+                    <TableHead className="text-right">Target Tercapai</TableHead>
+                    <TableHead className="text-right">Akurasi</TableHead>
+                    <TableHead className="text-right">Rata Proyeksi</TableHead>
+                    <TableHead className="text-right">Rata Aktual</TableHead>
+                    <TableHead className="text-right">Rata Deviasi</TableHead>
+                    <TableHead className="text-right">Aktual Terbaik</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r, i) => (
+                    <TableRow
+                      key={r.pair}
+                      data-testid={`by-coin-row-${r.pair.replace("_", "-")}`}
+                      className="cursor-pointer transition-colors duration-150 hover:bg-accent/60"
+                      onClick={() => navigate(`/coin/${r.pair}`)}
+                    >
+                      <TableCell className="font-mono text-sm">{i + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {r.logo ? (
+                            <img src={r.logo} alt={r.name} className="size-5 rounded-full" loading="lazy" />
+                          ) : (
+                            <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[9px] font-bold">
+                              {r.name.slice(0, 2)}
+                            </span>
+                          )}
+                          <span className="text-sm font-semibold">{r.name}/IDR</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">{r.appearances}×</TableCell>
+                      <TableCell className="text-right font-mono tabular-nums">
+                        {r.hits}/{r.appearances}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant="outline"
+                          className={
+                            r.hit_rate >= 75
+                              ? "border-bullish/40 text-bullish"
+                              : r.hit_rate >= 40
+                                ? "border-fundamental/40 text-fundamental"
+                                : "border-bearish/40 text-bearish"
+                          }
+                        >
+                          {r.hit_rate.toFixed(0)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-technical">{fmtPct(r.avg_projected)}</TableCell>
+                      <TableCell className={cn("text-right font-mono tabular-nums", r.avg_actual >= 0 ? "text-bullish" : "text-bearish")}>
+                        {fmtPct(r.avg_actual)}
+                      </TableCell>
+                      <TableCell className={cn("text-right font-mono tabular-nums", r.avg_deviation >= 0 ? "text-bullish" : "text-bearish")}>
+                        {fmtPct(r.avg_deviation)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono tabular-nums text-bullish">{fmtPct(r.best_actual)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function Evaluation() {
   return (
     <div className="space-y-6">
@@ -374,6 +546,7 @@ export default function Evaluation() {
           <TabsTrigger value="daily" data-testid="eval-tab-daily">Harian</TabsTrigger>
           <TabsTrigger value="weekly" data-testid="eval-tab-weekly">Mingguan</TabsTrigger>
           <TabsTrigger value="monthly" data-testid="eval-tab-monthly">Bulanan</TabsTrigger>
+          <TabsTrigger value="by-coin" data-testid="eval-tab-by-coin">Per Koin</TabsTrigger>
         </TabsList>
         <TabsContent value="daily" className="mt-6">
           <PeriodEvalTab kind="daily" />
@@ -383,6 +556,9 @@ export default function Evaluation() {
         </TabsContent>
         <TabsContent value="monthly" className="mt-6">
           <MonthlyTab />
+        </TabsContent>
+        <TabsContent value="by-coin" className="mt-6">
+          <ByCoinTab />
         </TabsContent>
       </Tabs>
     </div>

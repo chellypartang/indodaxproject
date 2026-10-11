@@ -18,6 +18,7 @@ import { apiGet } from "@/lib/api";
 import { fmtIDR, fmtPct, fmtWita, relativeTime } from "@/lib/format";
 import { SentimentChip, ScoreBar, TrendBadge, VolumeTrendBadge, scoreTone } from "@/components/bits";
 import PriceHistoryChart from "@/components/price-history-chart";
+import { StarToggle, useWatchlist } from "@/hooks/useWatchlist";
 import { PrintButton, PrintReportHeader } from "@/components/print-report";
 import type { SnapshotItem } from "@/types";
 import { Badge } from "@/components/ui/badge";
@@ -169,6 +170,8 @@ export default function CoinDetail() {
 
   const tech = coin?.technical;
   const fund = coin?.fundamental;
+  const { data: watchlist } = useWatchlist();
+  const isStarred = (watchlist ?? []).some((w) => w.pair === pair);
 
   if (isError) {
     return (
@@ -203,6 +206,7 @@ export default function CoinDetail() {
             </h1>
             <p className="font-mono text-xs text-muted-foreground">{pair} · Indodax</p>
           </div>
+          <StarToggle pair={pair} name={coin?.name} starred={isStarred} size="md" />
         </div>
         <div className="ml-auto flex items-center gap-4">
           <PrintButton testId="print-coin-report-button" label="PDF" />

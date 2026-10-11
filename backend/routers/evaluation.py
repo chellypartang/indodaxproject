@@ -10,7 +10,7 @@ from lib import engine
 from lib.auth import get_current_user
 from lib.dates import now_utc
 from lib.db import db
-from models.schemas import EvalResponse, MonthlyEvalResponse
+from models.schemas import CoinAccuracyResponse, EvalResponse, MonthlyEvalResponse
 
 router = APIRouter(prefix="/evaluation", tags=["evaluation"], dependencies=[Depends(get_current_user)])
 
@@ -39,6 +39,19 @@ async def evaluation_weekly(limit: int = Query(8, le=30)):
 async def evaluation_monthly():
     recap = await engine.monthly_recap()
     return MonthlyEvalResponse(**recap)
+
+
+@router.get("/by-coin", response_model=CoinAccuracyResponse)
+async def evaluation_by_coin(
+    kind: str = Query("daily"),
+    min_appearances: int = Query(1, ge=1, le=30),
+):
+    if kind not in ("daily", "weekly"):
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=422, detail="kind harus 'daily' atau 'weekly'")
+    recap = await engine.accuracy_by_coin(kind, min_appearances=min_appearances)
+    return CoinAccuracyResponse(**recap)
 
 
 def _csv_response(filename: str, header: list[str], rows: list[list]) -> Response:

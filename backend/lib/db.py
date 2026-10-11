@@ -41,6 +41,13 @@ INDEXES: dict[str, list[IndexModel]] = {
     "settings": [
         IndexModel([("key", ASCENDING)], name="key_unique", unique=True),
     ],
+    "watchlist": [
+        # one star per user per pair; listed newest-first per user
+        IndexModel(
+            [("user_id", ASCENDING), ("pair", ASCENDING)], name="user_pair_unique", unique=True
+        ),
+        IndexModel([("user_id", ASCENDING), ("created_at", DESCENDING)], name="user_created_desc"),
+    ],
     "price_history": [
         IndexModel([("ts", DESCENDING)], name="ts_desc"),
         # rolling 45-day market history; older samples expire server-side

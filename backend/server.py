@@ -25,6 +25,7 @@ from routers import evaluation as evaluation_router
 from routers import meta as meta_router
 from routers import settings as settings_router
 from routers import users as users_router
+from routers import watchlist as watchlist_router
 
 
 # Startup runs before the yield, shutdown after it. Add your own setup/teardown here.
@@ -97,6 +98,7 @@ api_router.include_router(users_router.router)
 api_router.include_router(analysis_router.router)
 api_router.include_router(evaluation_router.router)
 api_router.include_router(settings_router.router)
+api_router.include_router(watchlist_router.router)
 api_router.include_router(meta_router.router)
 
 # Include the router in the main app

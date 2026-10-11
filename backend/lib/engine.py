@@ -471,6 +471,84 @@ async def monthly_recap() -> dict:
     return {"points": points, "overall": overall}
 
 
+async def accuracy_by_coin(kind: str, limit_snapshots: int = 90, min_appearances: int = 1) -> dict:
+    """Per-coin model reliability across every evaluated snapshot of `kind`.
+
+    Aggregates each coin's appearances in locked snapshots against its recorded Actual High,
+    so the ranking answers "which coins does the model predict best".
+    """
+    docs = await db.snapshots.find(
+        {"kind": kind, "actuals_recorded": True}
+    ).sort("period_end", -1).to_list(limit_snapshots)
+
+    acc: dict[str, dict] = {}
+    counted = 0
+    for doc in docs:
+        actuals = doc.get("actuals") or {}
+        if not actuals:
+            continue
+        counted += 1
+        meta = {it["pair"]: it for it in doc.get("items") or []}
+        period_end = _aware(doc["period_end"])
+        for pair, a in actuals.items():
+            it = meta.get(pair, {})
+            e = acc.setdefault(
+                pair,
+                {
+                    "pair": pair,
+                    "coin": it.get("coin") or pair.split("_")[0],
+                    "name": it.get("name") or pair.split("_")[0].upper(),
+                    "logo": it.get("logo") or "",
+                    "appearances": 0,
+                    "hits": 0,
+                    "proj": [],
+                    "act": [],
+                    "dev": [],
+                    "last_seen": period_end,
+                },
+            )
+            e["appearances"] += 1
+            if a.get("target_hit"):
+                e["hits"] += 1
+            e["proj"].append(float(a.get("projected_pct") or 0.0))
+            e["act"].append(float(a.get("actual_pct") or 0.0))
+            e["dev"].append(float(a.get("deviation_pct") or 0.0))
+            if period_end > e["last_seen"]:
+                e["last_seen"] = period_end
+            if it.get("logo") and not e["logo"]:
+                e["logo"] = it["logo"]
+
+    rows = []
+    for e in acc.values():
+        if e["appearances"] < min_appearances:
+            continue
+        n = e["appearances"]
+        rows.append({
+            "pair": e["pair"],
+            "coin": e["coin"],
+            "name": e["name"],
+            "logo": e["logo"],
+            "appearances": n,
+            "hits": e["hits"],
+            "hit_rate": round(100.0 * e["hits"] / n, 1),
+            "avg_projected": round(sum(e["proj"]) / n, 2),
+            "avg_actual": round(sum(e["act"]) / n, 2),
+            "avg_deviation": round(sum(e["dev"]) / n, 2),
+            "best_actual": round(max(e["act"]), 2),
+            "worst_actual": round(min(e["act"]), 2),
+            "last_seen": e["last_seen"],
+        })
+
+    # most reliable first: hit rate, then sample size, then how close the projection ran
+    rows.sort(key=lambda r: (-r["hit_rate"], -r["appearances"], abs(r["avg_deviation"])))
+    return {
+        "kind": kind,
+        "rows": rows,
+        "snapshots_evaluated": counted,
+        "min_appearances": min_appearances,
+    }
+
+
 def _wita_tz():
     from lib.dates import WITA
     return WITA
